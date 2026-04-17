@@ -58,7 +58,19 @@ function sanitizeText(value) {
 }
 
 function getUserById(id) {
-  return users.find((u) => u.id === id) || null;
+  return users.find((u) => String(u.id) === String(id)) || null;
+}
+
+function nowParts() {
+  const now = new Date();
+  return {
+    ts: now.getTime(),
+    date: now.toLocaleDateString("ru-RU"),
+    time: now.toLocaleTimeString("ru-RU", {
+      hour: "2-digit",
+      minute: "2-digit"
+    })
+  };
 }
 
 function upsertUser(phone, username) {
@@ -86,29 +98,14 @@ function upsertUser(phone, username) {
   return user;
 }
 
-function nowParts() {
-  const now = new Date();
-  return {
-    ts: now.getTime(),
-    date: now.toLocaleDateString("ru-RU"),
-    time: now.toLocaleTimeString("ru-RU", {
-      hour: "2-digit",
-      minute: "2-digit"
-    })
-  };
-}
-
 function getStatusText(user) {
-  if (sockets.has(user.id)) {
-    return "онлайн";
-  }
+  if (!user) return "неизвестно";
+  if (sockets.has(user.id)) return "online";
 
-  if (!user.lastSeen) {
-    return "давно не был";
-  }
+  if (!user.lastSeen) return "offline";
 
   const d = new Date(user.lastSeen);
-  return "был " + d.toLocaleString("ru-RU", {
+  return "last seen " + d.toLocaleString("ru-RU", {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -121,8 +118,34 @@ function getUnreadCount(viewer, peerId) {
   const readTs = Number(reads[peerId] || 0);
 
   return messages.filter((m) => {
-    return m.from === peerId && m.to === viewer.id && m.ts > readTs;
+    return (
+      String(m.from) === String(peerId) &&
+      String(m.to) === String(viewer.id) &&
+      Number(m.ts || 0) > readTs
+    );
   }).length;
+}
+
+function getDeliveryStatusFor(message, viewerId) {
+  if (String(message.from) !== String(viewerId)) {
+    return "";
+  }
+
+  const peer = getUserById(message.to);
+  if (!peer) return "Sent";
+
+  const peerReads = peer.reads || {};
+  const peerReadTs = Number(peerReads[viewerId] || 0);
+
+  if (peerReadTs >= Number(message.ts || 0)) {
+    return "Read";
+  }
+
+  if (sockets.has(peer.id)) {
+    return "Delivered";
+  }
+
+  return "Sent";
 }
 
 function buildUsersFor(viewerId) {
@@ -130,7 +153,7 @@ function buildUsersFor(viewerId) {
   if (!viewer) return [];
 
   return users
-    .filter((u) => u.id !== viewerId)
+    .filter((u) => String(u.id) !== String(viewerId))
     .map((u) => ({
       id: u.id,
       phone: u.phone,
@@ -140,6 +163,13 @@ function buildUsersFor(viewerId) {
       statusText: getStatusText(u),
       unreadCount: getUnreadCount(viewer, u.id)
     }));
+}
+
+function buildMessagesFor(viewerId) {
+  return messages.map((m) => ({
+    ...m,
+    status: getDeliveryStatusFor(m, viewerId)
+  }));
 }
 
 function sendUsersTo(userId) {
@@ -152,19 +182,30 @@ function sendUsersTo(userId) {
   });
 }
 
-function broadcastUsers() {
-  for (const userId of sockets.keys()) {
-    sendUsersTo(userId);
-  }
-}
-
 function sendHistoryTo(userId) {
   const ws = sockets.get(userId);
   if (!ws) return;
 
   send(ws, {
     type: "history",
-    messages
+    messages: buildMessagesFor(userId)
+  });
+}
+
+function broadcastUsers() {
+  for (const userId of sockets.keys()) {
+    sendUsersTo(userId);
+  }
+}
+
+function broadcastHistoryRefreshFor(userIds) {
+  const uniq = [...new Set(userIds.map(String))];
+  uniq.forEach((userId) => {
+    const ws = sockets.get(userId);
+    if (ws) {
+      sendHistoryTo(userId);
+      sendUsersTo(userId);
+    }
   });
 }
 
@@ -180,6 +221,13 @@ function markRead(userId, peerId) {
   writeJson(USERS_FILE, users);
 
   sendUsersTo(userId);
+  sendHistoryTo(userId);
+
+  const peerWs = sockets.get(peerId);
+  if (peerWs) {
+    sendHistoryTo(peerId);
+    sendUsersTo(peerId);
+  }
 }
 
 function handleRegister(ws, data) {
@@ -244,6 +292,10 @@ function handleMessage(ws, data) {
 
   const now = nowParts();
 
+  const replyTo = data.replyTo
+    ? messages.find((m) => String(m.id) === String(data.replyTo))
+    : null;
+
   const message = {
     id: now.ts + Math.floor(Math.random() * 1000),
     from: fromUser.id,
@@ -255,7 +307,16 @@ function handleMessage(ws, data) {
     fileName: sanitizeText(data.fileName || ""),
     date: now.date,
     time: now.time,
-    ts: now.ts
+    ts: now.ts,
+    edited: false,
+    replyTo: replyTo
+      ? {
+          id: replyTo.id,
+          username: replyTo.username,
+          text: replyTo.kind === "text" ? replyTo.text : replyTo.kind === "image" ? "Фото" : "Голосовое",
+          kind: replyTo.kind
+        }
+      : null
   };
 
   if (kind === "text" && !message.text) return;
@@ -264,15 +325,7 @@ function handleMessage(ws, data) {
   messages.push(message);
   writeJson(MESSAGES_FILE, messages);
 
-  send(ws, { type: "message", message });
-
-  const targetWs = sockets.get(to);
-  if (targetWs) {
-    send(targetWs, { type: "message", message });
-  }
-
-  sendUsersTo(fromUser.id);
-  sendUsersTo(to);
+  broadcastHistoryRefreshFor([fromUser.id, to]);
 }
 
 function handleTyping(ws, data) {
@@ -300,6 +353,52 @@ function handleRead(ws, data) {
   if (!peerId) return;
 
   markRead(ws.userId, peerId);
+}
+
+function handleDelete(ws, data) {
+  if (!ws.userId) return;
+
+  const msg = messages.find((m) => String(m.id) === String(data.id));
+  if (!msg) return;
+
+  if (String(msg.from) !== String(ws.userId)) {
+    send(ws, { type: "error", message: "Удалять можно только свои сообщения" });
+    return;
+  }
+
+  messages = messages.filter((m) => String(m.id) !== String(data.id));
+  writeJson(MESSAGES_FILE, messages);
+
+  broadcastHistoryRefreshFor([msg.from, msg.to]);
+}
+
+function handleEdit(ws, data) {
+  if (!ws.userId) return;
+
+  const msg = messages.find((m) => String(m.id) === String(data.id));
+  if (!msg) return;
+
+  if (String(msg.from) !== String(ws.userId)) {
+    send(ws, { type: "error", message: "Редактировать можно только свои сообщения" });
+    return;
+  }
+
+  const text = sanitizeText(data.text);
+  if (!text) {
+    send(ws, { type: "error", message: "Текст не может быть пустым" });
+    return;
+  }
+
+  if (msg.kind !== "text") {
+    send(ws, { type: "error", message: "Редактировать можно только текстовые сообщения" });
+    return;
+  }
+
+  msg.text = text;
+  msg.edited = true;
+
+  writeJson(MESSAGES_FILE, messages);
+  broadcastHistoryRefreshFor([msg.from, msg.to]);
 }
 
 const MIME_TYPES = {
@@ -368,6 +467,16 @@ wss.on("connection", (ws) => {
         handleRead(ws, data);
         return;
       }
+
+      if (data.type === "delete") {
+        handleDelete(ws, data);
+        return;
+      }
+
+      if (data.type === "edit") {
+        handleEdit(ws, data);
+        return;
+      }
     } catch (error) {
       console.error("Ошибка обработки WS:", error.message);
       send(ws, { type: "error", message: "Ошибка обработки данных" });
@@ -385,6 +494,10 @@ wss.on("connection", (ws) => {
       }
 
       broadcastUsers();
+
+      for (const userId of sockets.keys()) {
+        sendHistoryTo(userId);
+      }
     }
   });
 });
