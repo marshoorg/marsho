@@ -1,4 +1,4 @@
-vlet ws = null;
+let ws = null;
 let reconnectTimer = null;
 
 let me = null;
@@ -15,9 +15,9 @@ let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
 
-const STORAGE_KEY = "marsho_auth_ui_v1";
-const OPEN_CHAT_KEY = "marsho_open_chat_ui_v1";
-const PROFILE_KEY = "marsho_profile_ui_v1";
+const STORAGE_KEY = "marsho_auth_stable_v1";
+const OPEN_CHAT_KEY = "marsho_open_chat_stable_v1";
+const PROFILE_KEY = "marsho_profile_stable_v1";
 
 const appShell = document.getElementById("appShell");
 const authDiv = document.getElementById("auth");
@@ -737,9 +737,7 @@ function renderMessages() {
     }
 
     div.onclick = function (event) {
-      if (event.target.tagName === "AUDIO" || event.target.tagName === "IMG") {
-        return;
-      }
+      if (event.target.tagName === "AUDIO" || event.target.tagName === "IMG") return;
       closeMessageMenu();
     };
 
@@ -849,22 +847,16 @@ function closeMessageMenu() {
 }
 
 function menuReply() {
-  if (currentMenuMessage) {
-    setReply(currentMenuMessage);
-  }
+  if (currentMenuMessage) setReply(currentMenuMessage);
   closeMessageMenu();
 }
 
 function menuEdit() {
-  if (currentMenuMessage) {
-    editMessage(currentMenuMessage.id, currentMenuMessage.text);
-  }
+  if (currentMenuMessage) editMessage(currentMenuMessage.id, currentMenuMessage.text);
 }
 
 function menuDelete() {
-  if (currentMenuMessage) {
-    deleteMessage(currentMenuMessage.id);
-  }
+  if (currentMenuMessage) deleteMessage(currentMenuMessage.id);
 }
 
 function menuTogglePin(peerId, shouldPin) {
