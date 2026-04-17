@@ -23,40 +23,19 @@ const imageInput = document.getElementById("imageInput");
 const voiceBtn = document.getElementById("voiceBtn");
 const recordHint = document.getElementById("recordHint");
 
-console.log("elements", {
-  appDiv,
-  phoneInput,
-  usernameInput,
-  msgInput,
-  statusDiv,
-  usersDiv,
-  chatDiv,
-  topbarDiv,
-  topSubDiv,
-  topAvatarDiv,
-  imageInput,
-  voiceBtn,
-  recordHint
-});
-
 ws.onopen = function () {
-  console.log("WS OPEN");
   statusDiv.textContent = "Статус: подключено к Marsho";
 };
 
-ws.onerror = function (e) {
-  console.log("WS ERROR", e);
+ws.onerror = function () {
   statusDiv.textContent = "Статус: ошибка подключения";
 };
 
 ws.onclose = function () {
-  console.log("WS CLOSE");
   statusDiv.textContent = "Статус: соединение закрыто";
 };
 
 ws.onmessage = function (event) {
-  console.log("WS MESSAGE", event.data);
-
   const data = JSON.parse(event.data);
 
   if (data.type === "registered") {
@@ -93,12 +72,10 @@ ws.onmessage = function (event) {
 };
 
 function registerUser() {
-  console.log("registerUser click");
+  alert("registerUser called");
 
   const phone = phoneInput.value.trim();
   const username = usernameInput.value.trim();
-
-  console.log("register data", { phone, username, readyState: ws.readyState });
 
   if (!phone) {
     alert("Введите номер телефона");
@@ -123,8 +100,6 @@ function registerUser() {
 }
 
 function sendMessage() {
-  console.log("sendMessage click");
-
   const text = msgInput.value.trim();
 
   if (!me) {
@@ -189,13 +164,10 @@ function renderUsers() {
       "</div>";
 
     div.onclick = function () {
-      console.log("user selected", user);
-
       selectedUserId = user.id;
       topbarDiv.textContent = "Чат с " + user.username;
       topSubDiv.textContent = "Номер: " + user.phone;
       topAvatarDiv.textContent = getInitial(user.username);
-
       renderUsers();
       renderMessages();
       openMobileChat();
