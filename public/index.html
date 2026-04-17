@@ -904,20 +904,111 @@
       </section>
     </div>
 
-    <nav class="bottom-nav" id="bottomNav">
-      <button class="nav-btn active" id="navChats" type="button" onclick="switchBottomTab('chats')">
-        <span class="nav-icon">C</span>
-        <span>Chats</span>
-      </button>
-      <button class="nav-btn" id="navProfile" type="button" onclick="switchBottomTab('profile')">
-        <span class="nav-icon">P</span>
-        <span>Profile</span>
-      </button>
-      <button class="nav-btn" id="navSettings" type="button" onclick="switchBottomTab('settings')">
-        <span class="nav-icon">S</span>
-        <span>Settings</span>
-      </button>
-    </nav>
+<section class="mobile-screen" id="profileScreen">
+  ...
+</section>
+
+<section class="mobile-screen" id="callsScreen">
+  <div class="profile-card">
+    <div class="settings-item">
+      <div class="settings-item-title">Calls</div>
+      <div class="settings-item-sub">История звонков</div>
+    </div>
+
+    <div class="settings-item">
+      <div class="user-item" style="margin-bottom:0;">
+        <div class="avatar" style="background: linear-gradient(135deg,#315a84,#4f8cff);">A</div>
+        <div class="user-main">
+          <div class="user-top">
+            <div class="user-name">Amina</div>
+            <div class="user-time">12:48</div>
+          </div>
+          <div class="user-preview">Outgoing audio call</div>
+          <div class="user-status">Yesterday</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-item">
+      <div class="user-item" style="margin-bottom:0;">
+        <div class="avatar" style="background: linear-gradient(135deg,#059669,#34d399);">M</div>
+        <div class="user-main">
+          <div class="user-top">
+            <div class="user-name">Murad</div>
+            <div class="user-time">09:14</div>
+          </div>
+          <div class="user-preview">Missed video call</div>
+          <div class="user-status">Today</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <button type="button" class="btn btn-primary ripple" onclick="ripple(event); fakeCall()">Start call</button>
+    </div>
+  </div>
+</section>
+
+<section class="mobile-screen" id="settingsScreen">
+  ...
+</section>
+    
+<section class="mobile-screen" id="callsScreen">
+  <div class="profile-card">
+
+    <div class="settings-list">
+
+      <div class="settings-item">
+        <div class="settings-item-title">Marsho Stable UI</div>
+        <div class="settings-item-sub">Нижняя навигация, профиль, поиск и улучшенный интерфейс.</div>
+      </div>
+
+      <div class="settings-item">
+        <div class="settings-item-title">Сохранение</div>
+        <div class="settings-item-sub">Данные сохраняются локально.</div>
+      </div>
+
+    </div>
+  </div>
+
+    <div class="settings-item">
+      <div class="user-item" style="margin-bottom:0;">
+        <div class="avatar" style="background: linear-gradient(135deg,#315a84,#4f8cff);">A</div>
+        <div class="user-main">
+          <div class="user-top">
+            <div class="user-name">Amina</div>
+            <div class="user-time">12:48</div>
+          </div>
+          <div class="user-preview">Outgoing audio call</div>
+          <div class="user-status">Yesterday</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-item">
+      <div class="user-item" style="margin-bottom:0;">
+        <div class="avatar" style="background: linear-gradient(135deg,#059669,#34d399);">M</div>
+        <div class="user-main">
+          <div class="user-top">
+            <div class="user-name">Murad</div>
+            <div class="user-time">09:14</div>
+          </div>
+          <div class="user-preview">Missed video call</div>
+          <div class="user-status">Today</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <button type="button" class="btn btn-primary ripple" onclick="ripple(event); fakeCall()">Start call</button>
+    </div>
+  </div>
+</section>
+
+<section class="mobile-screen" id="settingsScreen">
+  ...
+</section>
+
   </div>
 
   <div class="viewer" id="viewer" onclick="closeImageViewer()">
