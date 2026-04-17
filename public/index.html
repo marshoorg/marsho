@@ -428,21 +428,23 @@
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-title">Вход / регистрация</div>
-       <input id="phone" type="text" placeholder="Номер телефона">
-<input id="username" type="text" placeholder="Username">
+    <div class="card" id="auth">
+  <div class="card-title">Вход / регистрация</div>
 
-        <button
-          id="loginBtn"
-          type="button"
-          class="btn btn-primary"
-          onclick="registerUser()"
-          style="position: relative; z-index: 99999; pointer-events: auto;"
-        >
-          Войти
-        </button>
-      </div>
+  <input id="phone" type="text" placeholder="Номер телефона" />
+  <input id="username" type="text" placeholder="Username" />
+
+  <button
+    id="loginBtn"
+    type="button"
+    class="btn btn-primary"
+    onclick="registerUser()"
+    style="position: relative; z-index: 99999;"
+  >
+    Войти
+  </button>
+</div>
+
 
       <div class="section-title">Пользователи онлайн</div>
       <div class="dialogs" id="users">
