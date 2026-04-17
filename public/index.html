@@ -12,6 +12,7 @@
 
     :root {
       --bg: #0e1621;
+      --panel: #17212b;
       --line: rgba(255,255,255,0.06);
       --text: #e8f1ff;
       --muted: #93a4b7;
@@ -19,6 +20,8 @@
       --primary-hover: #6a9dff;
       --me: #2b5278;
       --other: #182533;
+      --danger: #ef4444;
+      --badge: #4f8cff;
     }
 
     html, body {
@@ -46,8 +49,8 @@
     }
 
     .sidebar {
-      width: 350px;
-      min-width: 350px;
+      width: 360px;
+      min-width: 360px;
       background: rgba(23,33,43,0.95);
       border-right: 1px solid var(--line);
       display: flex;
@@ -56,7 +59,6 @@
       gap: 14px;
       position: relative;
       z-index: 30;
-      pointer-events: auto;
     }
 
     .brand-row {
@@ -66,8 +68,8 @@
     }
 
     .brand-logo {
-      width: 44px;
-      height: 44px;
+      width: 48px;
+      height: 48px;
       border-radius: 14px;
       display: flex;
       align-items: center;
@@ -80,7 +82,7 @@
     }
 
     .brand-title {
-      font-size: 29px;
+      font-size: 30px;
       font-weight: 800;
     }
 
@@ -94,9 +96,6 @@
       border: 1px solid var(--line);
       border-radius: 20px;
       padding: 14px;
-      position: relative;
-      z-index: 40;
-      pointer-events: auto;
     }
 
     .card-title {
@@ -115,11 +114,15 @@
       padding: 13px 14px;
       font-size: 14px;
       margin-bottom: 10px;
-      pointer-events: auto;
     }
 
     input::placeholder {
       color: #6f859c;
+    }
+
+    input:focus {
+      border-color: rgba(79,140,255,0.7);
+      box-shadow: 0 0 0 4px rgba(79,140,255,0.12);
     }
 
     .btn {
@@ -130,9 +133,7 @@
       padding: 12px 14px;
       font-weight: 700;
       font-size: 14px;
-      transition: 0.15s ease;
       color: white;
-      pointer-events: auto;
     }
 
     .btn-primary {
@@ -145,13 +146,17 @@
     }
 
     .btn-danger {
-      background: linear-gradient(180deg, #ff6a6a, #ef4444);
+      background: linear-gradient(180deg, #ff6a6a, var(--danger));
     }
 
-    .dialogs {
-      flex: 1;
-      overflow-y: auto;
-      min-height: 0;
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .hidden {
+      display: none !important;
     }
 
     .section-title {
@@ -159,6 +164,12 @@
       color: var(--muted);
       text-transform: uppercase;
       margin-top: 4px;
+    }
+
+    .dialogs {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
     }
 
     .user-item {
@@ -185,10 +196,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #315a84, #4f8cff);
       color: white;
       font-weight: bold;
       flex-shrink: 0;
+      user-select: none;
     }
 
     .user-main {
@@ -196,9 +207,21 @@
       min-width: 0;
     }
 
+    .user-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
     .user-name {
       font-weight: 700;
-      margin-bottom: 4px;
+    }
+
+    .user-time {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
     }
 
     .user-preview {
@@ -207,6 +230,27 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      margin-top: 4px;
+    }
+
+    .user-status {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .badge {
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: var(--badge);
+      color: white;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
     }
 
     .main {
@@ -216,7 +260,6 @@
       flex-direction: column;
       position: relative;
       z-index: 10;
-      pointer-events: auto;
     }
 
     .topbar {
@@ -243,9 +286,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #315a84, #4f8cff);
-      font-weight: bold;
       color: white;
+      font-weight: bold;
       flex-shrink: 0;
     }
 
@@ -265,6 +307,16 @@
       color: #93c5fd;
       border-bottom: 1px solid var(--line);
       background: rgba(13,23,36,0.88);
+      flex-shrink: 0;
+    }
+
+    .typing-bar {
+      padding: 8px 18px;
+      font-size: 12px;
+      color: #8ab4ff;
+      min-height: 34px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(13,23,36,0.65);
       flex-shrink: 0;
     }
 
@@ -300,11 +352,24 @@
       border-radius: 18px 18px 8px 18px;
     }
 
+    .message-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
     .message-name {
       font-size: 12px;
       color: #b9d5ff;
-      margin-bottom: 6px;
       font-weight: 700;
+    }
+
+    .message-time {
+      font-size: 11px;
+      color: #c8d6ea;
+      white-space: nowrap;
     }
 
     .message-text {
@@ -353,26 +418,12 @@
       flex-wrap: wrap;
     }
 
-    .hidden {
-      display: none;
-    }
-
     .hint {
       font-size: 12px;
       color: var(--muted);
     }
 
     @media (max-width: 700px) {
-      html, body {
-        overflow: hidden;
-      }
-
-      .app {
-        position: relative;
-        width: 100%;
-        height: 100vh;
-      }
-
       .sidebar,
       .main {
         position: absolute;
@@ -385,13 +436,11 @@
       .sidebar {
         display: flex;
         z-index: 50;
-        pointer-events: auto;
       }
 
       .main {
         display: none;
         z-index: 60;
-        pointer-events: none;
       }
 
       .app.mobile-chat-open .sidebar {
@@ -400,7 +449,6 @@
 
       .app.mobile-chat-open .main {
         display: flex;
-        pointer-events: auto;
       }
 
       .back-btn {
@@ -413,6 +461,11 @@
 
       .brand-title {
         font-size: 24px;
+      }
+
+      .sidebar {
+        width: 100%;
+        min-width: 100%;
       }
     }
   </style>
@@ -428,23 +481,17 @@
         </div>
       </div>
 
-    <div class="card" id="auth">
-  <div class="card-title">Вход / регистрация</div>
+      <div class="card" id="auth">
+        <div class="card-title">Вход / регистрация</div>
+        <input id="phone" type="text" placeholder="Номер телефона" />
+        <input id="username" type="text" placeholder="Username" />
+        <div class="row">
+          <button type="button" class="btn btn-primary" onclick="registerUser()">Войти</button>
+          <button type="button" class="btn btn-ghost" onclick="logoutUser()">Выйти</button>
+        </div>
+      </div>
 
-  <input id="phone" type="text" placeholder="Номер телефона" />
-  <input id="username" type="text" placeholder="Username" />
-
-  <button
-    id="loginBtn"
-    type="button"
-    class="btn btn-primary"
-    onclick="registerUser()"
-    style="position: relative; z-index: 99999;"
-  >
-    Войти
-  </button>
-</div>
-
+      <input id="searchInput" type="text" placeholder="Поиск по пользователям..." />
 
       <div class="section-title">Пользователи онлайн</div>
       <div class="dialogs" id="users">
@@ -463,6 +510,7 @@
       </div>
 
       <div class="status" id="status">Статус: загрузка...</div>
+      <div class="typing-bar" id="typingBar"></div>
 
       <div class="chat" id="chat">
         <div class="empty">Сначала войдите, затем выберите пользователя слева.</div>
