@@ -76,19 +76,17 @@ function registerUser() {
   const usernameField = document.getElementById("username");
 
   if (!phoneField) {
-    alert('❌ Не найден input с id="phone"');
+    alert('Не найден input с id="phone"');
     return;
   }
 
   if (!usernameField) {
-    alert('❌ Не найден input с id="username"');
+    alert('Не найден input с id="username"');
     return;
   }
 
   const phone = String(phoneField.value || "").trim();
   const username = String(usernameField.value || "").trim();
-
-  alert("DEBUG: phone = [" + phone + "] username = [" + username + "]");
 
   if (!phone) {
     alert("Введите номер телефона");
@@ -101,27 +99,16 @@ function registerUser() {
   }
 
   if (ws.readyState !== 1) {
-    alert("Соединение с сервером не готово");
+    alert("Соединение с сервером не готово. Обновите страницу.");
     return;
   }
 
-  me = {
-    id: phone,
-    username: username,
-    phone: phone
-  };
-
   ws.send(JSON.stringify({
     type: "register",
-    user: me
+    phone: phone,
+    username: username
   }));
-
-  document.getElementById("auth").style.display = "none";
-
-  renderUsers();
-  renderMessages();
 }
-
 
 function sendMessage() {
   const text = msgInput.value.trim();
