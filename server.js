@@ -22,7 +22,7 @@ function readJson(file, fallback) {
     const raw = fs.readFileSync(file, "utf8");
     return JSON.parse(raw || JSON.stringify(fallback));
   } catch (error) {
-    console.error("Ошибка чтения:", file, error.message);
+    console.error("Read error:", file, error.message);
     return fallback;
   }
 }
@@ -31,7 +31,7 @@ function writeJson(file, data) {
   try {
     fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
   } catch (error) {
-    console.error("Ошибка записи:", file, error.message);
+    console.error("Write error:", file, error.message);
   }
 }
 
@@ -41,6 +41,12 @@ ensureFile(MESSAGES_FILE, []);
 let users = readJson(USERS_FILE, []);
 let messages = readJson(MESSAGES_FILE, []);
 
+users = users.map((u) => ({
+  ...u,
+  reads: u.reads && typeof u.reads === "object" ? u.reads : {},
+  pinned: Array.isArray(u.pinned) ? u.pinned : []
+}));
+
 const sockets = new Map();
 
 function send(ws, payload) {
@@ -49,7 +55,7 @@ function send(ws, payload) {
       ws.send(JSON.stringify(payload));
     }
   } catch (error) {
-    console.error("Ошибка отправки:", error.message);
+    console.error("Send error:", error.message);
   }
 }
 
@@ -83,15 +89,15 @@ function upsertUser(phone, username) {
       username,
       createdAt: Date.now(),
       lastSeen: null,
-      reads: {}
+      reads: {},
+      pinned: []
     };
     users.push(user);
   } else {
     user.phone = phone;
     user.username = username;
-    if (!user.reads || typeof user.reads !== "object") {
-      user.reads = {};
-    }
+    if (!user.reads || typeof user.reads !== "object") user.reads = {};
+    if (!Array.isArray(user.pinned)) user.pinned = [];
   }
 
   writeJson(USERS_FILE, users);
@@ -99,7 +105,7 @@ function upsertUser(phone, username) {
 }
 
 function getStatusText(user) {
-  if (!user) return "неизвестно";
+  if (!user) return "offline";
   if (sockets.has(user.id)) return "online";
 
   if (!user.lastSeen) return "offline";
@@ -161,7 +167,8 @@ function buildUsersFor(viewerId) {
       online: sockets.has(u.id),
       lastSeen: u.lastSeen,
       statusText: getStatusText(u),
-      unreadCount: getUnreadCount(viewer, u.id)
+      unreadCount: getUnreadCount(viewer, u.id),
+      pinned: (viewer.pinned || []).includes(u.id)
     }));
 }
 
@@ -201,8 +208,7 @@ function broadcastUsers() {
 function broadcastHistoryRefreshFor(userIds) {
   const uniq = [...new Set(userIds.map(String))];
   uniq.forEach((userId) => {
-    const ws = sockets.get(userId);
-    if (ws) {
+    if (sockets.has(userId)) {
       sendHistoryTo(userId);
       sendUsersTo(userId);
     }
@@ -223,10 +229,9 @@ function markRead(userId, peerId) {
   sendUsersTo(userId);
   sendHistoryTo(userId);
 
-  const peerWs = sockets.get(peerId);
-  if (peerWs) {
-    sendHistoryTo(peerId);
+  if (sockets.has(peerId)) {
     sendUsersTo(peerId);
+    sendHistoryTo(peerId);
   }
 }
 
@@ -292,7 +297,7 @@ function handleMessage(ws, data) {
 
   const now = nowParts();
 
-  const replyTo = data.replyTo
+  const replySource = data.replyTo
     ? messages.find((m) => String(m.id) === String(data.replyTo))
     : null;
 
@@ -309,12 +314,17 @@ function handleMessage(ws, data) {
     time: now.time,
     ts: now.ts,
     edited: false,
-    replyTo: replyTo
+    replyTo: replySource
       ? {
-          id: replyTo.id,
-          username: replyTo.username,
-          text: replyTo.kind === "text" ? replyTo.text : replyTo.kind === "image" ? "Фото" : "Голосовое",
-          kind: replyTo.kind
+          id: replySource.id,
+          username: replySource.username,
+          text:
+            replySource.kind === "text"
+              ? replySource.text
+              : replySource.kind === "image"
+              ? "Фото"
+              : "Голосовое",
+          kind: replySource.kind
         }
       : null
   };
@@ -396,9 +406,38 @@ function handleEdit(ws, data) {
 
   msg.text = text;
   msg.edited = true;
-
   writeJson(MESSAGES_FILE, messages);
+
   broadcastHistoryRefreshFor([msg.from, msg.to]);
+}
+
+function handlePin(ws, data) {
+  if (!ws.userId) return;
+
+  const user = getUserById(ws.userId);
+  if (!user) return;
+
+  const peerId = sanitizeText(data.peerId);
+  if (!peerId) return;
+
+  if (!Array.isArray(user.pinned)) user.pinned = [];
+
+  if ((data.action || "toggle") === "pin") {
+    if (!user.pinned.includes(peerId)) {
+      user.pinned.push(peerId);
+    }
+  } else if (data.action === "unpin") {
+    user.pinned = user.pinned.filter((id) => String(id) !== String(peerId));
+  } else {
+    if (user.pinned.includes(peerId)) {
+      user.pinned = user.pinned.filter((id) => String(id) !== String(peerId));
+    } else {
+      user.pinned.push(peerId);
+    }
+  }
+
+  writeJson(USERS_FILE, users);
+  sendUsersTo(user.id);
 }
 
 const MIME_TYPES = {
@@ -448,37 +487,15 @@ wss.on("connection", (ws) => {
     try {
       const data = JSON.parse(String(raw || "{}"));
 
-      if (data.type === "register") {
-        handleRegister(ws, data);
-        return;
-      }
-
-      if (data.type === "message") {
-        handleMessage(ws, data);
-        return;
-      }
-
-      if (data.type === "typing") {
-        handleTyping(ws, data);
-        return;
-      }
-
-      if (data.type === "read") {
-        handleRead(ws, data);
-        return;
-      }
-
-      if (data.type === "delete") {
-        handleDelete(ws, data);
-        return;
-      }
-
-      if (data.type === "edit") {
-        handleEdit(ws, data);
-        return;
-      }
+      if (data.type === "register") return handleRegister(ws, data);
+      if (data.type === "message") return handleMessage(ws, data);
+      if (data.type === "typing") return handleTyping(ws, data);
+      if (data.type === "read") return handleRead(ws, data);
+      if (data.type === "delete") return handleDelete(ws, data);
+      if (data.type === "edit") return handleEdit(ws, data);
+      if (data.type === "pin") return handlePin(ws, data);
     } catch (error) {
-      console.error("Ошибка обработки WS:", error.message);
+      console.error("WS error:", error.message);
       send(ws, { type: "error", message: "Ошибка обработки данных" });
     }
   });
@@ -503,5 +520,5 @@ wss.on("connection", (ws) => {
 });
 
 server.listen(PORT, () => {
-  console.log("Marsho server started on port", PORT);
+  console.log("Marsho v5 started on port", PORT);
 });
