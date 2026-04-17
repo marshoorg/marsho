@@ -1,17 +1,13 @@
+alert("APP JS LOADED");
+
 const ws = new WebSocket(
   (location.protocol === "https:" ? "wss://" : "ws://") + location.host
 );
 
 let me = null;
 let selectedUserId = null;
-let selectedUsername = "";
-let selectedPhone = "";
 let users = [];
 let messages = [];
-
-let mediaRecorder = null;
-let audioChunks = [];
-let isRecording = false;
 
 const appDiv = document.getElementById("app");
 const phoneInput = document.getElementById("phone");
@@ -27,19 +23,40 @@ const imageInput = document.getElementById("imageInput");
 const voiceBtn = document.getElementById("voiceBtn");
 const recordHint = document.getElementById("recordHint");
 
+console.log("elements", {
+  appDiv,
+  phoneInput,
+  usernameInput,
+  msgInput,
+  statusDiv,
+  usersDiv,
+  chatDiv,
+  topbarDiv,
+  topSubDiv,
+  topAvatarDiv,
+  imageInput,
+  voiceBtn,
+  recordHint
+});
+
 ws.onopen = function () {
+  console.log("WS OPEN");
   statusDiv.textContent = "Статус: подключено к Marsho";
 };
 
-ws.onerror = function () {
+ws.onerror = function (e) {
+  console.log("WS ERROR", e);
   statusDiv.textContent = "Статус: ошибка подключения";
 };
 
 ws.onclose = function () {
+  console.log("WS CLOSE");
   statusDiv.textContent = "Статус: соединение закрыто";
 };
 
 ws.onmessage = function (event) {
+  console.log("WS MESSAGE", event.data);
+
   const data = JSON.parse(event.data);
 
   if (data.type === "registered") {
@@ -76,8 +93,12 @@ ws.onmessage = function (event) {
 };
 
 function registerUser() {
+  console.log("registerUser click");
+
   const phone = phoneInput.value.trim();
   const username = usernameInput.value.trim();
+
+  console.log("register data", { phone, username, readyState: ws.readyState });
 
   if (!phone) {
     alert("Введите номер телефона");
@@ -102,6 +123,8 @@ function registerUser() {
 }
 
 function sendMessage() {
+  console.log("sendMessage click");
+
   const text = msgInput.value.trim();
 
   if (!me) {
@@ -134,137 +157,18 @@ function sendMessage() {
 }
 
 function pickImage() {
-  if (!me) {
-    alert("Сначала войдите");
-    return;
-  }
-
-  if (!selectedUserId) {
-    alert("Сначала выберите пользователя");
-    return;
-  }
-
-  imageInput.click();
+  alert("Фото пока выключено для проверки");
 }
 
-imageInput.addEventListener("change", function () {
-  const file = imageInput.files[0];
-
-  if (!file) {
-    return;
-  }
-
-  if (file.size > 3 * 1024 * 1024) {
-    alert("Фото слишком большое. До 3 МБ.");
-    imageInput.value = "";
-    return;
-  }
-
-  const reader = new FileReader();
-
-  reader.onload = function () {
-    if (ws.readyState !== 1) {
-      alert("Соединение с сервером потеряно. Обновите страницу.");
-      return;
-    }
-
-    ws.send(JSON.stringify({
-      type: "message",
-      kind: "image",
-      to: selectedUserId,
-      dataUrl: reader.result,
-      fileName: file.name
-    }));
-  };
-
-  reader.readAsDataURL(file);
-  imageInput.value = "";
-});
-
-async function toggleRecording() {
-  if (!me) {
-    alert("Сначала войдите");
-    return;
-  }
-
-  if (!selectedUserId) {
-    alert("Сначала выберите пользователя");
-    return;
-  }
-
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    alert("Запись не поддерживается на этом устройстве");
-    return;
-  }
-
-  if (!isRecording) {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      audioChunks = [];
-      mediaRecorder = new MediaRecorder(stream);
-      isRecording = true;
-
-      voiceBtn.textContent = "Стоп";
-      voiceBtn.classList.remove("btn-ghost");
-      voiceBtn.classList.add("btn-danger");
-      recordHint.textContent = "Идёт запись...";
-
-      mediaRecorder.ondataavailable = function (event) {
-        if (event.data.size > 0) {
-          audioChunks.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = function () {
-        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-        const reader = new FileReader();
-
-        reader.onloadend = function () {
-          if (ws.readyState !== 1) {
-            alert("Соединение с сервером потеряно. Обновите страницу.");
-            return;
-          }
-
-          ws.send(JSON.stringify({
-            type: "message",
-            kind: "voice",
-            to: selectedUserId,
-            dataUrl: reader.result,
-            duration: 0,
-            fileName: "voice.webm"
-          }));
-        };
-
-        reader.readAsDataURL(audioBlob);
-
-        stream.getTracks().forEach(function (track) {
-          track.stop();
-        });
-
-        isRecording = false;
-        voiceBtn.textContent = "Голосовое";
-        voiceBtn.classList.remove("btn-danger");
-        voiceBtn.classList.add("btn-ghost");
-        recordHint.textContent = "Готов к записи";
-      };
-
-      mediaRecorder.start();
-    } catch (error) {
-      alert("Не удалось включить микрофон");
-    }
-  } else {
-    mediaRecorder.stop();
-  }
+function toggleRecording() {
+  alert("Голосовое пока выключено для проверки");
 }
 
 function renderUsers() {
   usersDiv.innerHTML = "";
 
   const otherUsers = users.filter(function (user) {
-    if (!me) {
-      return true;
-    }
+    if (!me) return true;
     return user.id !== me.id;
   });
 
@@ -273,55 +177,21 @@ function renderUsers() {
     return;
   }
 
-  const prepared = otherUsers.map(function (user) {
-    const dialogMessages = me ? getDialogMessages(user.id) : [];
-    const last = dialogMessages.length ? dialogMessages[dialogMessages.length - 1] : null;
-
-    let preview = "Сообщений пока нет";
-
-    if (last) {
-      if (last.kind === "text") {
-        preview = last.text || "";
-      } else if (last.kind === "image") {
-        preview = "📷 Фото";
-      } else if (last.kind === "voice") {
-        preview = "🎤 Голосовое";
-      }
-
-      if (me && last.from === me.id) {
-        preview = "Вы: " + preview;
-      }
-    }
-
-    return {
-      id: user.id,
-      username: user.username,
-      phone: user.phone,
-      preview: preview,
-      lastId: last ? last.id : 0
-    };
-  });
-
-  prepared.sort(function (a, b) {
-    return b.lastId - a.lastId;
-  });
-
-  prepared.forEach(function (user) {
+  otherUsers.forEach(function (user) {
     const div = document.createElement("div");
     div.className = user.id === selectedUserId ? "user-item active" : "user-item";
 
     div.innerHTML =
       "<div class='avatar'>" + getInitial(user.username) + "</div>" +
       "<div class='user-main'>" +
-        "<div class='user-name'>" + escapeHtml(user.username) + "</div>" +
-        "<div class='user-preview'>" + escapeHtml(user.preview) + "</div>" +
+      "<div class='user-name'>" + escapeHtml(user.username) + "</div>" +
+      "<div class='user-preview'>Нажмите, чтобы открыть чат</div>" +
       "</div>";
 
     div.onclick = function () {
-      selectedUserId = user.id;
-      selectedUsername = user.username;
-      selectedPhone = user.phone;
+      console.log("user selected", user);
 
+      selectedUserId = user.id;
       topbarDiv.textContent = "Чат с " + user.username;
       topSubDiv.textContent = "Номер: " + user.phone;
       topAvatarDiv.textContent = getInitial(user.username);
@@ -348,7 +218,12 @@ function renderMessages() {
     return;
   }
 
-  const dialogMessages = getDialogMessages(selectedUserId);
+  const dialogMessages = messages.filter(function (msg) {
+    return (
+      (msg.from === me.id && msg.to === selectedUserId) ||
+      (msg.from === selectedUserId && msg.to === me.id)
+    );
+  });
 
   if (dialogMessages.length === 0) {
     chatDiv.innerHTML = "<div class='empty'>Сообщений пока нет. Напишите первым.</div>";
@@ -358,42 +233,13 @@ function renderMessages() {
   dialogMessages.forEach(function (msg) {
     const div = document.createElement("div");
     div.className = msg.from === me.id ? "message mine" : "message";
-
-    let contentHtml = "";
-
-    if (msg.kind === "text") {
-      contentHtml = "<div class='message-text'>" + escapeHtml(msg.text) + "</div>";
-    } else if (msg.kind === "image") {
-      contentHtml =
-        "<div class='message-text'>Фото</div>" +
-        "<img class='message-image' src='" + msg.dataUrl + "' alt='photo' />";
-    } else if (msg.kind === "voice") {
-      contentHtml =
-        "<div class='message-text'>Голосовое</div>" +
-        "<audio class='message-audio' controls src='" + msg.dataUrl + "'></audio>";
-    }
-
     div.innerHTML =
-      "<div class='message-name'>" +
-      escapeHtml(msg.username) +
-      " • " +
-      escapeHtml((msg.date || "") + " " + (msg.time || "")) +
-      "</div>" +
-      contentHtml;
-
+      "<div class='message-name'>" + escapeHtml(msg.username || "") + "</div>" +
+      "<div class='message-text'>" + escapeHtml(msg.text || "") + "</div>";
     chatDiv.appendChild(div);
   });
 
   chatDiv.scrollTop = chatDiv.scrollHeight;
-}
-
-function getDialogMessages(userId) {
-  return messages.filter(function (msg) {
-    return (
-      (msg.from === me.id && msg.to === userId) ||
-      (msg.from === userId && msg.to === me.id)
-    );
-  });
 }
 
 function getInitial(name) {
