@@ -107,7 +107,6 @@ function upsertUser(phone, username) {
 function getStatusText(user) {
   if (!user) return "offline";
   if (sockets.has(user.id)) return "online";
-
   if (!user.lastSeen) return "offline";
 
   const d = new Date(user.lastSeen);
@@ -133,9 +132,7 @@ function getUnreadCount(viewer, peerId) {
 }
 
 function getDeliveryStatusFor(message, viewerId) {
-  if (String(message.from) !== String(viewerId)) {
-    return "";
-  }
+  if (String(message.from) !== String(viewerId)) return "";
 
   const peer = getUserById(message.to);
   if (!peer) return "Sent";
@@ -143,14 +140,8 @@ function getDeliveryStatusFor(message, viewerId) {
   const peerReads = peer.reads || {};
   const peerReadTs = Number(peerReads[viewerId] || 0);
 
-  if (peerReadTs >= Number(message.ts || 0)) {
-    return "Read";
-  }
-
-  if (sockets.has(peer.id)) {
-    return "Delivered";
-  }
-
+  if (peerReadTs >= Number(message.ts || 0)) return "Read";
+  if (sockets.has(peer.id)) return "Delivered";
   return "Sent";
 }
 
@@ -205,12 +196,12 @@ function broadcastUsers() {
   }
 }
 
-function broadcastHistoryRefreshFor(userIds) {
+function refreshForUsers(userIds) {
   const uniq = [...new Set(userIds.map(String))];
   uniq.forEach((userId) => {
     if (sockets.has(userId)) {
-      sendHistoryTo(userId);
       sendUsersTo(userId);
+      sendHistoryTo(userId);
     }
   });
 }
@@ -226,13 +217,7 @@ function markRead(userId, peerId) {
   user.reads[peerId] = Date.now();
   writeJson(USERS_FILE, users);
 
-  sendUsersTo(userId);
-  sendHistoryTo(userId);
-
-  if (sockets.has(peerId)) {
-    sendUsersTo(peerId);
-    sendHistoryTo(peerId);
-  }
+  refreshForUsers([userId, peerId]);
 }
 
 function handleRegister(ws, data) {
@@ -267,8 +252,8 @@ function handleRegister(ws, data) {
     }
   });
 
-  sendHistoryTo(user.id);
   sendUsersTo(user.id);
+  sendHistoryTo(user.id);
   broadcastUsers();
 }
 
@@ -335,7 +320,7 @@ function handleMessage(ws, data) {
   messages.push(message);
   writeJson(MESSAGES_FILE, messages);
 
-  broadcastHistoryRefreshFor([fromUser.id, to]);
+  refreshForUsers([fromUser.id, to]);
 }
 
 function handleTyping(ws, data) {
@@ -379,7 +364,7 @@ function handleDelete(ws, data) {
   messages = messages.filter((m) => String(m.id) !== String(data.id));
   writeJson(MESSAGES_FILE, messages);
 
-  broadcastHistoryRefreshFor([msg.from, msg.to]);
+  refreshForUsers([msg.from, msg.to]);
 }
 
 function handleEdit(ws, data) {
@@ -408,7 +393,7 @@ function handleEdit(ws, data) {
   msg.edited = true;
   writeJson(MESSAGES_FILE, messages);
 
-  broadcastHistoryRefreshFor([msg.from, msg.to]);
+  refreshForUsers([msg.from, msg.to]);
 }
 
 function handlePin(ws, data) {
@@ -520,5 +505,5 @@ wss.on("connection", (ws) => {
 });
 
 server.listen(PORT, () => {
-  console.log("Marsho v5 started on port", PORT);
+  console.log("Marsho stable build started on port", PORT);
 });
