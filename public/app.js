@@ -72,11 +72,36 @@ ws.onmessage = function (event) {
 };
 
 function registerUser() {
-  const phone = phoneInput.value.trim();
-  const username = usernameInput.value.trim();
+  const phoneField = document.getElementById("phone");
+  const usernameField = document.getElementById("username");
 
-  if (!phone || !username) {
-    alert("Введите данные");
+  if (!phoneField) {
+    alert('❌ Не найден input с id="phone"');
+    return;
+  }
+
+  if (!usernameField) {
+    alert('❌ Не найден input с id="username"');
+    return;
+  }
+
+  const phone = String(phoneField.value || "").trim();
+  const username = String(usernameField.value || "").trim();
+
+  alert("DEBUG: phone = [" + phone + "] username = [" + username + "]");
+
+  if (!phone) {
+    alert("Введите номер телефона");
+    return;
+  }
+
+  if (!username) {
+    alert("Введите username");
+    return;
+  }
+
+  if (ws.readyState !== 1) {
+    alert("Соединение с сервером не готово");
     return;
   }
 
@@ -96,6 +121,7 @@ function registerUser() {
   renderUsers();
   renderMessages();
 }
+
 
 function sendMessage() {
   const text = msgInput.value.trim();
