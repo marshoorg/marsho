@@ -1,14 +1,13 @@
 {
   "name": "marsho",
-  "version": "4.0.0",
-  "description": "Marsho messenger",
+  "version": "6.0.0",
+  "description": "Marsho messenger stable build",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "type": "commonjs",
   "dependencies": {
-    "express": "^5.1.0",
     "ws": "^8.18.0"
   }
 }
