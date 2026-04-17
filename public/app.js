@@ -72,31 +72,29 @@ ws.onmessage = function (event) {
 };
 
 function registerUser() {
-  alert("registerUser called");
-
   const phone = phoneInput.value.trim();
   const username = usernameInput.value.trim();
 
-  if (!phone) {
-    alert("Введите номер телефона");
+  if (!phone || !username) {
+    alert("Введите данные");
     return;
   }
 
-  if (!username) {
-    alert("Введите username");
-    return;
-  }
-
-  if (ws.readyState !== 1) {
-    alert("Соединение с сервером не готово. Обновите страницу.");
-    return;
-  }
+  me = {
+    id: phone,
+    username: username,
+    phone: phone
+  };
 
   ws.send(JSON.stringify({
     type: "register",
-    phone: phone,
-    username: username
+    user: me
   }));
+
+  document.getElementById("auth").style.display = "none";
+
+  renderUsers();
+  renderMessages();
 }
 
 function sendMessage() {
