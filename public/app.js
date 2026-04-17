@@ -7,12 +7,13 @@ let users = [];
 let messages = [];
 let typingTimer = null;
 let remoteTypingTimer = null;
+let replyTo = null;
 
 let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
 
-const STORAGE_KEY = "marsho_auth_v2";
+const STORAGE_KEY = "marsho_auth_v4";
 
 const appDiv = document.getElementById("app");
 const authDiv = document.getElementById("auth");
@@ -30,6 +31,18 @@ const topAvatarDiv = document.getElementById("topAvatar");
 const imageInput = document.getElementById("imageInput");
 const voiceBtn = document.getElementById("voiceBtn");
 const recordHint = document.getElementById("recordHint");
+const replyBar = document.getElementById("replyBar");
+const replyTitle = document.getElementById("replyTitle");
+const replyText = document.getElementById("replyText");
+const viewer = document.getElementById("viewer");
+const viewerImg = document.getElementById("viewerImg");
+
+let notifyAudio = null;
+try {
+  notifyAudio = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+} catch (e) {
+  notifyAudio = null;
+}
 
 function wsUrl() {
   return (location.protocol === "https:" ? "wss://" : "ws://") + location.host;
@@ -91,32 +104,20 @@ function connectWs() {
       return;
     }
 
-    if (data.type === "message") {
-      messages.push(data.message);
-      renderUsers();
-      renderMessages();
-
-      if (me && data.message.from !== me.id) {
-        if (selectedUserId === data.message.from) {
-          sendRead(data.message.from);
-        }
-      }
-      return;
-    }
-
     if (data.type === "typing") {
-      if (selectedUserId === data.from) {
+      if (selectedUserId && String(selectedUserId) === String(data.from)) {
         typingBar.textContent = data.username + " печатает...";
         if (remoteTypingTimer) clearTimeout(remoteTypingTimer);
         remoteTypingTimer = setTimeout(function () {
           typingBar.textContent = "";
-        }, 1400);
+        }, 1200);
       }
       return;
     }
 
     if (data.type === "error") {
       alert(data.message);
+      return;
     }
   };
 }
@@ -139,6 +140,8 @@ function logoutUser() {
   selectedUserId = null;
   users = [];
   messages = [];
+  replyTo = null;
+
   authDiv.classList.remove("hidden");
   phoneInput.value = "";
   usernameInput.value = "";
@@ -151,6 +154,7 @@ function logoutUser() {
   topAvatarDiv.style.background = "linear-gradient(135deg, #315a84, #4f8cff)";
   usersDiv.innerHTML = "<div class='empty'>Пока никого нет онлайн</div>";
   chatDiv.innerHTML = "<div class='empty'>Сначала войдите, затем выберите пользователя слева.</div>";
+  clearReply();
   goBackToUsers();
 
   if (ws && ws.readyState === 1) {
@@ -181,8 +185,8 @@ function registerUser() {
 
   ws.send(JSON.stringify({
     type: "register",
-    phone: phone,
-    username: username
+    phone,
+    username
   }));
 }
 
@@ -191,7 +195,7 @@ function sendRead(peerId) {
 
   ws.send(JSON.stringify({
     type: "read",
-    peerId: peerId
+    peerId
   }));
 }
 
@@ -217,9 +221,7 @@ function sendMessage() {
     return;
   }
 
-  if (!text) {
-    return;
-  }
+  if (!text) return;
 
   if (!ws || ws.readyState !== 1) {
     alert("Соединение с сервером потеряно. Обновите страницу.");
@@ -229,12 +231,14 @@ function sendMessage() {
   ws.send(JSON.stringify({
     type: "message",
     kind: "text",
-    text: text,
-    to: selectedUserId
+    text,
+    to: selectedUserId,
+    replyTo: replyTo ? replyTo.id : null
   }));
 
   msgInput.value = "";
   typingBar.textContent = "";
+  clearReply();
 }
 
 function pickImage() {
@@ -274,8 +278,11 @@ imageInput.addEventListener("change", function () {
       kind: "image",
       to: selectedUserId,
       dataUrl: reader.result,
-      fileName: file.name
+      fileName: file.name,
+      replyTo: replyTo ? replyTo.id : null
     }));
+
+    clearReply();
   };
 
   reader.readAsDataURL(file);
@@ -332,8 +339,11 @@ async function toggleRecording() {
             kind: "voice",
             to: selectedUserId,
             dataUrl: reader.result,
-            fileName: "voice.webm"
+            fileName: "voice.webm",
+            replyTo: replyTo ? replyTo.id : null
           }));
+
+          clearReply();
         };
 
         reader.readAsDataURL(audioBlob);
@@ -376,6 +386,17 @@ function avatarStyleById(id) {
   return "linear-gradient(135deg, " + pair[0] + ", " + pair[1] + ")";
 }
 
+function getDialogMessages(userId) {
+  if (!me) return [];
+
+  return messages.filter(function (msg) {
+    return (
+      (String(msg.from) === String(me.id) && String(msg.to) === String(userId)) ||
+      (String(msg.from) === String(userId) && String(msg.to) === String(me.id))
+    );
+  });
+}
+
 function getLastMessageFor(userId) {
   const dialogMessages = getDialogMessages(userId);
   return dialogMessages.length ? dialogMessages[dialogMessages.length - 1] : null;
@@ -409,9 +430,9 @@ function renderUsers() {
 
     if (last) {
       if (last.kind === "text") preview = last.text || "";
-      if (last.kind === "image") preview = "📷 Фото";
-      if (last.kind === "voice") preview = "🎤 Голосовое";
-      if (me && last.from === me.id) preview = "Вы: " + preview;
+      if (last.kind === "image") preview = "Фото";
+      if (last.kind === "voice") preview = "Голосовое";
+      if (me && String(last.from) === String(me.id)) preview = "Вы: " + preview;
       lastTime = last.time || "";
     }
 
@@ -419,7 +440,7 @@ function renderUsers() {
       ...user,
       preview,
       lastTime,
-      sortTs: last ? last.ts : 0
+      sortTs: last ? Number(last.ts || 0) : 0
     };
   });
 
@@ -429,7 +450,7 @@ function renderUsers() {
 
   prepared.forEach(function (user) {
     const div = document.createElement("div");
-    div.className = user.id === selectedUserId ? "user-item active" : "user-item";
+    div.className = String(user.id) === String(selectedUserId) ? "user-item active" : "user-item";
 
     div.innerHTML =
       "<div class='avatar' style='background:" + avatarStyleById(user.id) + "'>" +
@@ -468,7 +489,7 @@ function updateTopbarStatus() {
   if (!selectedUserId) return;
 
   const user = users.find(function (u) {
-    return u.id === selectedUserId;
+    return String(u.id) === String(selectedUserId);
   });
 
   if (user) {
@@ -498,20 +519,39 @@ function renderMessages() {
 
   dialogMessages.forEach(function (msg) {
     const div = document.createElement("div");
-    div.className = msg.from === me.id ? "message mine" : "message";
+    div.className = String(msg.from) === String(me.id) ? "message mine" : "message";
 
     let contentHtml = "";
 
     if (msg.kind === "text") {
-      contentHtml = "<div class='message-text'>" + escapeHtml(msg.text) + "</div>";
+      contentHtml = "<div class='message-text'>" + escapeHtml(msg.text || "") + "</div>";
     } else if (msg.kind === "image") {
       contentHtml =
         "<div class='message-text'>Фото</div>" +
-        "<img class='message-image' src='" + msg.dataUrl + "' alt='photo' />";
+        "<img class='message-image' src='" + msg.dataUrl + "' alt='photo' onclick='openImageViewer(" + JSON.stringify(msg.dataUrl) + ")' />";
     } else if (msg.kind === "voice") {
       contentHtml =
         "<div class='message-text'>Голосовое</div>" +
         "<audio class='message-audio' controls src='" + msg.dataUrl + "'></audio>";
+    }
+
+    let replyHtml = "";
+    if (msg.replyTo) {
+      replyHtml =
+        "<div class='message-reply'>" +
+          "<div class='message-reply-name'>" + escapeHtml(msg.replyTo.username || "") + "</div>" +
+          "<div>" + escapeHtml(msg.replyTo.text || "") + "</div>" +
+        "</div>";
+    }
+
+    let statusHtml = "";
+    if (String(msg.from) === String(me.id)) {
+      statusHtml = "<div class='message-status'>" + escapeHtml(msg.status || "") + "</div>";
+    }
+
+    let editedHtml = "";
+    if (msg.edited) {
+      editedHtml = "<div class='message-status'>Edited</div>";
     }
 
     div.innerHTML =
@@ -519,7 +559,54 @@ function renderMessages() {
         "<div class='message-name'>" + escapeHtml(msg.username || "") + "</div>" +
         "<div class='message-time'>" + escapeHtml((msg.date || "") + " " + (msg.time || "")) + "</div>" +
       "</div>" +
-      contentHtml;
+      replyHtml +
+      contentHtml +
+      editedHtml +
+      statusHtml;
+
+    if (String(msg.from) === String(me.id)) {
+      const actions = document.createElement("div");
+      actions.className = "msg-actions";
+
+      const replyBtn = document.createElement("button");
+      replyBtn.innerText = "Reply";
+      replyBtn.onclick = function () {
+        setReply(msg);
+      };
+
+      const editBtn = document.createElement("button");
+      editBtn.innerText = "Edit";
+      editBtn.onclick = function () {
+        editMessage(msg.id, msg.text);
+      };
+
+      const delBtn = document.createElement("button");
+      delBtn.innerText = "Delete";
+      delBtn.onclick = function () {
+        deleteMessage(msg.id);
+      };
+
+      actions.appendChild(replyBtn);
+
+      if (msg.kind === "text") {
+        actions.appendChild(editBtn);
+      }
+
+      actions.appendChild(delBtn);
+      div.appendChild(actions);
+    } else {
+      const actions = document.createElement("div");
+      actions.className = "msg-actions";
+
+      const replyBtn = document.createElement("button");
+      replyBtn.innerText = "Reply";
+      replyBtn.onclick = function () {
+        setReply(msg);
+      };
+
+      actions.appendChild(replyBtn);
+      div.appendChild(actions);
+    }
 
     chatDiv.appendChild(div);
   });
@@ -527,15 +614,53 @@ function renderMessages() {
   chatDiv.scrollTop = chatDiv.scrollHeight;
 }
 
-function getDialogMessages(userId) {
-  if (!me) return [];
+function setReply(msg) {
+  replyTo = msg;
+  replyTitle.textContent = "Reply to " + (msg.username || "");
+  replyText.textContent =
+    msg.kind === "text"
+      ? msg.text || ""
+      : msg.kind === "image"
+      ? "Фото"
+      : "Голосовое";
+  replyBar.classList.add("visible");
+}
 
-  return messages.filter(function (msg) {
-    return (
-      (msg.from === me.id && msg.to === userId) ||
-      (msg.from === userId && msg.to === me.id)
-    );
-  });
+function clearReply() {
+  replyTo = null;
+  replyBar.classList.remove("visible");
+  replyTitle.textContent = "Reply";
+  replyText.textContent = "";
+}
+
+function deleteMessage(id) {
+  if (!confirm("Delete message?")) return;
+
+  ws.send(JSON.stringify({
+    type: "delete",
+    id
+  }));
+}
+
+function editMessage(id, oldText) {
+  const newText = prompt("Edit message:", oldText || "");
+  if (!newText) return;
+
+  ws.send(JSON.stringify({
+    type: "edit",
+    id,
+    text: newText
+  }));
+}
+
+function openImageViewer(src) {
+  viewerImg.src = src;
+  viewer.classList.add("visible");
+}
+
+function closeImageViewer() {
+  viewer.classList.remove("visible");
+  viewerImg.src = "";
 }
 
 function getInitial(name) {
@@ -583,5 +708,14 @@ document.addEventListener("visibilitychange", function () {
     sendRead(selectedUserId);
   }
 });
+
+document.addEventListener("click", function () {
+  if (notifyAudio) {
+    notifyAudio.play().then(function () {
+      notifyAudio.pause();
+      notifyAudio.currentTime = 0;
+    }).catch(function () {});
+  }
+}, { once: true });
 
 connectWs();
