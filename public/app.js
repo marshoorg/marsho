@@ -390,6 +390,19 @@ function getInitial(name) {
 function escapeHtml(text) {
   return String(text)
     .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
+    .replace(/</g, "&lt;");
+}
+
+function openMobileChat() {
+  if (window.innerWidth <= 700) {
+    document.body.classList.add("mobile-chat-open");
+  }
+}
+
+function goBackToUsers() {
+  document.body.classList.remove("mobile-chat-open");
+}
+
+
     .replace(/>/g, "&gt;");
 }
