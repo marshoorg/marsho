@@ -19,7 +19,6 @@
       --muted: #93a4b7;
       --primary: #4f8cff;
       --primary-hover: #6a9dff;
-      --primary-active: #3e7cf5;
       --me: #2b5278;
       --other: #182533;
     }
@@ -142,10 +141,6 @@
       box-shadow: 0 8px 18px rgba(79,140,255,0.28);
     }
 
-    .btn-primary:hover {
-      background: linear-gradient(180deg, #7ca9ff, #5a93ff);
-    }
-
     .btn-ghost {
       background: rgba(255,255,255,0.08);
     }
@@ -215,9 +210,9 @@
 
     .main {
       flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      min-width: 0;
     }
 
     .topbar {
@@ -228,6 +223,10 @@
       padding: 12px 18px;
       border-bottom: 1px solid var(--line);
       background: rgba(23,33,43,0.92);
+    }
+
+    .back-btn {
+      display: none;
     }
 
     .topbar-avatar {
@@ -354,13 +353,45 @@
     }
 
     @media (max-width: 700px) {
-      .sidebar {
+      html, body {
+        overflow: hidden;
+      }
+
+      .app {
+        position: relative;
+        width: 100%;
+        height: 100vh;
+      }
+
+      .sidebar,
+      .main {
+        position: absolute;
+        inset: 0;
         width: 100%;
         min-width: 100%;
+        height: 100%;
+      }
+
+      .sidebar {
+        display: flex;
+        z-index: 2;
       }
 
       .main {
-        width: 100%;
+        display: none;
+        z-index: 3;
+      }
+
+      .app.mobile-chat-open .sidebar {
+        display: none;
+      }
+
+      .app.mobile-chat-open .main {
+        display: flex;
+      }
+
+      .back-btn {
+        display: inline-block;
       }
 
       .message {
@@ -370,7 +401,7 @@
   </style>
 </head>
 <body>
-  <div class="app">
+  <div class="app" id="app">
     <div class="sidebar">
       <div class="brand-row">
         <div class="brand-logo">M</div>
@@ -384,7 +415,7 @@
         <div class="card-title">Вход / регистрация</div>
         <input id="phone" placeholder="Номер телефона" />
         <input id="username" placeholder="Username" />
-        <button class="btn btn-primary" onclick="registerUser()">Войти</button>
+        <button type="button" class="btn btn-primary" onclick="registerUser()">Войти</button>
       </div>
 
       <div class="section-title">Пользователи онлайн</div>
@@ -395,6 +426,7 @@
 
     <div class="main">
       <div class="topbar">
+        <button type="button" class="btn btn-ghost back-btn" onclick="goBackToUsers()">Назад</button>
         <div class="topbar-avatar" id="topAvatar">M</div>
         <div>
           <div id="topbar">Выберите пользователя</div>
@@ -411,12 +443,12 @@
       <div class="composer">
         <div class="composer-top">
           <input id="msg" placeholder="Введите сообщение..." />
-          <button class="btn btn-primary" onclick="sendMessage()">Отправить</button>
+          <button type="button" class="btn btn-primary" onclick="sendMessage()">Отправить</button>
         </div>
 
         <div class="composer-bottom">
-          <button class="btn btn-ghost" onclick="pickImage()">Фото</button>
-          <button class="btn btn-ghost" id="voiceBtn" onclick="toggleRecording()">Голосовое</button>
+          <button type="button" class="btn btn-ghost" onclick="pickImage()">Фото</button>
+          <button type="button" class="btn btn-ghost" id="voiceBtn" onclick="toggleRecording()">Голосовое</button>
           <span class="hint" id="recordHint">Готов к записи</span>
         </div>
 
