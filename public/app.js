@@ -8,18 +8,22 @@ let messages = [];
 let typingTimer = null;
 let remoteTypingTimer = null;
 let replyTo = null;
+let currentMenuMessage = null;
+let currentLongPressTimer = null;
 
 let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
 
-const STORAGE_KEY = "marsho_auth_v4";
+const STORAGE_KEY = "marsho_auth_v5";
+const OPEN_CHAT_KEY = "marsho_open_chat_v5";
 
 const appDiv = document.getElementById("app");
 const authDiv = document.getElementById("auth");
 const phoneInput = document.getElementById("phone");
 const usernameInput = document.getElementById("username");
 const searchInput = document.getElementById("searchInput");
+const messageSearchInput = document.getElementById("messageSearchInput");
 const msgInput = document.getElementById("msg");
 const statusDiv = document.getElementById("status");
 const typingBar = document.getElementById("typingBar");
@@ -36,6 +40,7 @@ const replyTitle = document.getElementById("replyTitle");
 const replyText = document.getElementById("replyText");
 const viewer = document.getElementById("viewer");
 const viewerImg = document.getElementById("viewerImg");
+const messageMenu = document.getElementById("messageMenu");
 
 let notifyAudio = null;
 try {
@@ -85,6 +90,12 @@ function connectWs() {
       saveAuth(me.phone, me.username);
       authDiv.classList.add("hidden");
       statusDiv.textContent = "Вы вошли как " + me.username;
+
+      const savedChat = localStorage.getItem(OPEN_CHAT_KEY);
+      if (savedChat) {
+        selectedUserId = savedChat;
+      }
+
       renderUsers();
       renderMessages();
       return;
@@ -134,8 +145,18 @@ function loadSavedAuth() {
   }
 }
 
+function saveOpenChat(userId) {
+  if (userId) {
+    localStorage.setItem(OPEN_CHAT_KEY, String(userId));
+  } else {
+    localStorage.removeItem(OPEN_CHAT_KEY);
+  }
+}
+
 function logoutUser() {
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(OPEN_CHAT_KEY);
+
   me = null;
   selectedUserId = null;
   users = [];
@@ -146,6 +167,7 @@ function logoutUser() {
   phoneInput.value = "";
   usernameInput.value = "";
   searchInput.value = "";
+  messageSearchInput.value = "";
   msgInput.value = "";
   typingBar.textContent = "";
   topbarDiv.textContent = "Выберите пользователя";
@@ -155,6 +177,7 @@ function logoutUser() {
   usersDiv.innerHTML = "<div class='empty'>Пока никого нет онлайн</div>";
   chatDiv.innerHTML = "<div class='empty'>Сначала войдите, затем выберите пользователя слева.</div>";
   clearReply();
+  closeMessageMenu();
   goBackToUsers();
 
   if (ws && ws.readyState === 1) {
@@ -368,6 +391,16 @@ async function toggleRecording() {
   }
 }
 
+function togglePin(peerId, shouldPin) {
+  if (!ws || ws.readyState !== 1) return;
+
+  ws.send(JSON.stringify({
+    type: "pin",
+    peerId,
+    action: shouldPin ? "pin" : "unpin"
+  }));
+}
+
 function avatarStyleById(id) {
   const colors = [
     ["#315a84", "#4f8cff"],
@@ -389,6 +422,30 @@ function avatarStyleById(id) {
 function getDialogMessages(userId) {
   if (!me) return [];
 
+  let dialog = messages.filter(function (msg) {
+    return (
+      (String(msg.from) === String(me.id) && String(msg.to) === String(userId)) ||
+      (String(msg.from) === String(userId) && String(msg.to) === String(me.id))
+    );
+  });
+
+  const q = String(messageSearchInput.value || "").trim().toLowerCase();
+  if (q) {
+    dialog = dialog.filter(function (msg) {
+      const replyTextValue = msg.replyTo ? String(msg.replyTo.text || "") : "";
+      return (
+        String(msg.text || "").toLowerCase().includes(q) ||
+        replyTextValue.toLowerCase().includes(q)
+      );
+    });
+  }
+
+  return dialog;
+}
+
+function getDialogMessagesRaw(userId) {
+  if (!me) return [];
+
   return messages.filter(function (msg) {
     return (
       (String(msg.from) === String(me.id) && String(msg.to) === String(userId)) ||
@@ -398,7 +455,7 @@ function getDialogMessages(userId) {
 }
 
 function getLastMessageFor(userId) {
-  const dialogMessages = getDialogMessages(userId);
+  const dialogMessages = getDialogMessagesRaw(userId);
   return dialogMessages.length ? dialogMessages[dialogMessages.length - 1] : null;
 }
 
@@ -445,12 +502,15 @@ function renderUsers() {
   });
 
   prepared.sort(function (a, b) {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
     return b.sortTs - a.sortTs;
   });
 
   prepared.forEach(function (user) {
     const div = document.createElement("div");
     div.className = String(user.id) === String(selectedUserId) ? "user-item active" : "user-item";
+    if (user.pinned) div.classList.add("pinned");
 
     div.innerHTML =
       "<div class='avatar' style='background:" + avatarStyleById(user.id) + "'>" +
@@ -458,7 +518,10 @@ function renderUsers() {
       "</div>" +
       "<div class='user-main'>" +
         "<div class='user-top'>" +
-          "<div class='user-name'>" + escapeHtml(user.username) + "</div>" +
+          "<div class='user-name'>" +
+            escapeHtml(user.username) +
+            (user.pinned ? "<span class='pin-mark'>Pinned</span>" : "") +
+          "</div>" +
           "<div style='display:flex;align-items:center;gap:8px;'>" +
             (user.unreadCount > 0 ? "<span class='badge'>" + user.unreadCount + "</span>" : "") +
             "<div class='user-time'>" + escapeHtml(user.lastTime || "") + "</div>" +
@@ -470,6 +533,7 @@ function renderUsers() {
 
     div.onclick = function () {
       selectedUserId = user.id;
+      saveOpenChat(user.id);
       topbarDiv.textContent = "Чат с " + user.username;
       topSubDiv.textContent = user.statusText || "";
       topAvatarDiv.textContent = getInitial(user.username);
@@ -480,6 +544,15 @@ function renderUsers() {
       openMobileChat();
       sendRead(user.id);
     };
+
+    div.oncontextmenu = function (event) {
+      event.preventDefault();
+      openUserMenu(event.clientX, event.clientY, user);
+    };
+
+    attachLongPress(div, function (event) {
+      openUserMenu(event.clientX || window.innerWidth / 2, event.clientY || window.innerHeight / 2, user);
+    });
 
     usersDiv.appendChild(div);
   });
@@ -517,7 +590,19 @@ function renderMessages() {
     return;
   }
 
+  let lastDateLabel = "";
+
   dialogMessages.forEach(function (msg) {
+    const currentDateLabel = formatDateSeparator(msg.ts);
+
+    if (currentDateLabel !== lastDateLabel) {
+      lastDateLabel = currentDateLabel;
+      const sep = document.createElement("div");
+      sep.className = "date-sep";
+      sep.textContent = currentDateLabel;
+      chatDiv.appendChild(sep);
+    }
+
     const div = document.createElement("div");
     div.className = String(msg.from) === String(me.id) ? "message mine" : "message";
 
@@ -528,7 +613,7 @@ function renderMessages() {
     } else if (msg.kind === "image") {
       contentHtml =
         "<div class='message-text'>Фото</div>" +
-        "<img class='message-image' src='" + msg.dataUrl + "' alt='photo' onclick='openImageViewer(" + JSON.stringify(msg.dataUrl) + ")' />";
+        "<img class='message-image' src='" + msg.dataUrl + "' alt='photo' />";
     } else if (msg.kind === "voice") {
       contentHtml =
         "<div class='message-text'>Голосовое</div>" +
@@ -544,14 +629,14 @@ function renderMessages() {
         "</div>";
     }
 
-    let statusHtml = "";
-    if (String(msg.from) === String(me.id)) {
-      statusHtml = "<div class='message-status'>" + escapeHtml(msg.status || "") + "</div>";
-    }
+    let infoHtml = "";
+    const infoParts = [];
 
-    let editedHtml = "";
-    if (msg.edited) {
-      editedHtml = "<div class='message-status'>Edited</div>";
+    if (msg.edited) infoParts.push("Edited");
+    if (String(msg.from) === String(me.id) && msg.status) infoParts.push(msg.status);
+
+    if (infoParts.length > 0) {
+      infoHtml = "<div class='message-status'>" + escapeHtml(infoParts.join(" · ")) + "</div>";
     }
 
     div.innerHTML =
@@ -561,52 +646,30 @@ function renderMessages() {
       "</div>" +
       replyHtml +
       contentHtml +
-      editedHtml +
-      statusHtml;
+      infoHtml;
 
-    if (String(msg.from) === String(me.id)) {
-      const actions = document.createElement("div");
-      actions.className = "msg-actions";
-
-      const replyBtn = document.createElement("button");
-      replyBtn.innerText = "Reply";
-      replyBtn.onclick = function () {
-        setReply(msg);
+    const img = div.querySelector(".message-image");
+    if (img) {
+      img.onclick = function () {
+        openImageViewer(msg.dataUrl);
       };
-
-      const editBtn = document.createElement("button");
-      editBtn.innerText = "Edit";
-      editBtn.onclick = function () {
-        editMessage(msg.id, msg.text);
-      };
-
-      const delBtn = document.createElement("button");
-      delBtn.innerText = "Delete";
-      delBtn.onclick = function () {
-        deleteMessage(msg.id);
-      };
-
-      actions.appendChild(replyBtn);
-
-      if (msg.kind === "text") {
-        actions.appendChild(editBtn);
-      }
-
-      actions.appendChild(delBtn);
-      div.appendChild(actions);
-    } else {
-      const actions = document.createElement("div");
-      actions.className = "msg-actions";
-
-      const replyBtn = document.createElement("button");
-      replyBtn.innerText = "Reply";
-      replyBtn.onclick = function () {
-        setReply(msg);
-      };
-
-      actions.appendChild(replyBtn);
-      div.appendChild(actions);
     }
+
+    div.onclick = function (event) {
+      if (event.target.tagName === "AUDIO" || event.target.tagName === "IMG") {
+        return;
+      }
+      closeMessageMenu();
+    };
+
+    div.oncontextmenu = function (event) {
+      event.preventDefault();
+      openMessageMenu(event.clientX, event.clientY, msg);
+    };
+
+    attachLongPress(div, function (event) {
+      openMessageMenu(event.clientX || window.innerWidth / 2, event.clientY || window.innerHeight / 2, msg);
+    });
 
     chatDiv.appendChild(div);
   });
@@ -634,6 +697,7 @@ function clearReply() {
 }
 
 function deleteMessage(id) {
+  closeMessageMenu();
   if (!confirm("Delete message?")) return;
 
   ws.send(JSON.stringify({
@@ -643,6 +707,7 @@ function deleteMessage(id) {
 }
 
 function editMessage(id, oldText) {
+  closeMessageMenu();
   const newText = prompt("Edit message:", oldText || "");
   if (!newText) return;
 
@@ -661,6 +726,115 @@ function openImageViewer(src) {
 function closeImageViewer() {
   viewer.classList.remove("visible");
   viewerImg.src = "";
+}
+
+function openMessageMenu(x, y, msg) {
+  currentMenuMessage = msg;
+
+  let html = "";
+  html += "<button type='button' onclick='menuReply()'>Reply</button>";
+
+  if (String(msg.from) === String(me.id) && msg.kind === "text") {
+    html += "<button type='button' onclick='menuEdit()'>Edit</button>";
+  }
+
+  if (String(msg.from) === String(me.id)) {
+    html += "<button type='button' onclick='menuDelete()'>Delete</button>";
+  }
+
+  messageMenu.innerHTML = html;
+  messageMenu.style.left = Math.max(10, x - 20) + "px";
+  messageMenu.style.top = Math.max(10, y - 20) + "px";
+  messageMenu.classList.add("visible");
+}
+
+function openUserMenu(x, y, user) {
+  const actionText = user.pinned ? "Unpin chat" : "Pin chat";
+
+  messageMenu.innerHTML =
+    "<button type='button' onclick='menuTogglePin(" + JSON.stringify(String(user.id)) + "," + JSON.stringify(!user.pinned) + ")'>" +
+      actionText +
+    "</button>";
+
+  messageMenu.style.left = Math.max(10, x - 20) + "px";
+  messageMenu.style.top = Math.max(10, y - 20) + "px";
+  messageMenu.classList.add("visible");
+}
+
+function closeMessageMenu() {
+  messageMenu.classList.remove("visible");
+  messageMenu.innerHTML = "";
+  currentMenuMessage = null;
+}
+
+function menuReply() {
+  if (currentMenuMessage) {
+    setReply(currentMenuMessage);
+  }
+  closeMessageMenu();
+}
+
+function menuEdit() {
+  if (currentMenuMessage) {
+    editMessage(currentMenuMessage.id, currentMenuMessage.text);
+  }
+}
+
+function menuDelete() {
+  if (currentMenuMessage) {
+    deleteMessage(currentMenuMessage.id);
+  }
+}
+
+function menuTogglePin(peerId, shouldPin) {
+  togglePin(peerId, shouldPin);
+  closeMessageMenu();
+}
+
+function attachLongPress(el, callback) {
+  el.addEventListener("touchstart", function (event) {
+    clearTimeout(currentLongPressTimer);
+    const touch = event.touches[0];
+    currentLongPressTimer = setTimeout(function () {
+      callback({
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      });
+    }, 450);
+  });
+
+  el.addEventListener("touchend", function () {
+    clearTimeout(currentLongPressTimer);
+  });
+
+  el.addEventListener("touchmove", function () {
+    clearTimeout(currentLongPressTimer);
+  });
+}
+
+function formatDateSeparator(ts) {
+  const d = new Date(ts);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  const sameDay =
+    d.getDate() === today.getDate() &&
+    d.getMonth() === today.getMonth() &&
+    d.getFullYear() === today.getFullYear();
+
+  const sameYesterday =
+    d.getDate() === yesterday.getDate() &&
+    d.getMonth() === yesterday.getMonth() &&
+    d.getFullYear() === yesterday.getFullYear();
+
+  if (sameDay) return "Сегодня";
+  if (sameYesterday) return "Вчера";
+
+  return d.toLocaleDateString("ru-RU", {
+    day: "2-digit",
+    month: "long"
+  });
 }
 
 function getInitial(name) {
@@ -687,6 +861,10 @@ searchInput.addEventListener("input", function () {
   renderUsers();
 });
 
+messageSearchInput.addEventListener("input", function () {
+  renderMessages();
+});
+
 msgInput.addEventListener("input", function () {
   if (!selectedUserId) return;
   sendTyping();
@@ -706,6 +884,13 @@ msgInput.addEventListener("keydown", function (event) {
 document.addEventListener("visibilitychange", function () {
   if (!document.hidden && selectedUserId) {
     sendRead(selectedUserId);
+  }
+});
+
+document.addEventListener("click", function (event) {
+  const insideMenu = messageMenu.contains(event.target);
+  if (!insideMenu) {
+    closeMessageMenu();
   }
 });
 
