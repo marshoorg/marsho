@@ -1,29 +1,28 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const express = require("express");
 const WebSocket = require("ws");
 
 const PORT = process.env.PORT || 3000;
 
-const USERS_FILE = path.join(__dirname, "users.json");
-const MESSAGES_FILE = path.join(__dirname, "messages.json");
+const ROOT = __dirname;
+const PUBLIC_DIR = path.join(ROOT, "public");
+const USERS_FILE = path.join(ROOT, "users.json");
+const MESSAGES_FILE = path.join(ROOT, "messages.json");
 
-let users = [];
-let messages = [];
-const clients = new Map();
+function ensureFile(file, fallback) {
+  if (!fs.existsSync(file)) {
+    fs.writeFileSync(file, JSON.stringify(fallback, null, 2), "utf8");
+  }
+}
 
 function readJson(file, fallback) {
   try {
-    if (!fs.existsSync(file)) {
-      fs.writeFileSync(file, JSON.stringify(fallback, null, 2), "utf8");
-      return fallback;
-    }
-
-    const text = fs.readFileSync(file, "utf8");
-    return JSON.parse(text);
+    ensureFile(file, fallback);
+    const raw = fs.readFileSync(file, "utf8");
+    return JSON.parse(raw || JSON.stringify(fallback));
   } catch (error) {
-    console.log("Ошибка чтения:", file, error.message);
+    console.error("Ошибка чтения:", file, error.message);
     return fallback;
   }
 }
@@ -32,225 +31,364 @@ function writeJson(file, data) {
   try {
     fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
   } catch (error) {
-    console.log("Ошибка записи:", file, error.message);
+    console.error("Ошибка записи:", file, error.message);
   }
 }
 
-function loadData() {
-  users = readJson(USERS_FILE, []);
-  messages = readJson(MESSAGES_FILE, []);
-}
+ensureFile(USERS_FILE, []);
+ensureFile(MESSAGES_FILE, []);
 
-function send(ws, data) {
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(data));
-  }
-}
+let users = readJson(USERS_FILE, []);
+let messages = readJson(MESSAGES_FILE, []);
 
-function broadcast(data) {
-  wss.clients.forEach(function (client) {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(data));
+const sockets = new Map();
+
+function send(ws, payload) {
+  try {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(payload));
     }
+  } catch (error) {
+    console.error("Ошибка отправки:", error.message);
+  }
+}
+
+function sanitizeText(value) {
+  return String(value || "").trim();
+}
+
+function getUserById(id) {
+  return users.find((u) => u.id === id) || null;
+}
+
+function upsertUser(phone, username) {
+  let user = getUserById(phone);
+
+  if (!user) {
+    user = {
+      id: phone,
+      phone,
+      username,
+      createdAt: Date.now(),
+      lastSeen: null,
+      reads: {}
+    };
+    users.push(user);
+  } else {
+    user.phone = phone;
+    user.username = username;
+    if (!user.reads || typeof user.reads !== "object") {
+      user.reads = {};
+    }
+  }
+
+  writeJson(USERS_FILE, users);
+  return user;
+}
+
+function nowParts() {
+  const now = new Date();
+  return {
+    ts: now.getTime(),
+    date: now.toLocaleDateString("ru-RU"),
+    time: now.toLocaleTimeString("ru-RU", {
+      hour: "2-digit",
+      minute: "2-digit"
+    })
+  };
+}
+
+function getStatusText(user) {
+  if (sockets.has(user.id)) {
+    return "онлайн";
+  }
+
+  if (!user.lastSeen) {
+    return "давно не был";
+  }
+
+  const d = new Date(user.lastSeen);
+  return "был " + d.toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function getUnreadCount(viewer, peerId) {
+  const reads = viewer.reads || {};
+  const readTs = Number(reads[peerId] || 0);
+
+  return messages.filter((m) => {
+    return m.from === peerId && m.to === viewer.id && m.ts > readTs;
+  }).length;
+}
+
+function buildUsersFor(viewerId) {
+  const viewer = getUserById(viewerId);
+  if (!viewer) return [];
+
+  return users
+    .filter((u) => u.id !== viewerId)
+    .map((u) => ({
+      id: u.id,
+      phone: u.phone,
+      username: u.username,
+      online: sockets.has(u.id),
+      lastSeen: u.lastSeen,
+      statusText: getStatusText(u),
+      unreadCount: getUnreadCount(viewer, u.id)
+    }));
+}
+
+function sendUsersTo(userId) {
+  const ws = sockets.get(userId);
+  if (!ws) return;
+
+  send(ws, {
+    type: "users",
+    users: buildUsersFor(userId)
   });
 }
 
 function broadcastUsers() {
-  const onlineUsers = [];
+  for (const userId of sockets.keys()) {
+    sendUsersTo(userId);
+  }
+}
 
-  clients.forEach(function (user) {
-    onlineUsers.push({
+function sendHistoryTo(userId) {
+  const ws = sockets.get(userId);
+  if (!ws) return;
+
+  send(ws, {
+    type: "history",
+    messages
+  });
+}
+
+function markRead(userId, peerId) {
+  const user = getUserById(userId);
+  if (!user) return;
+
+  if (!user.reads || typeof user.reads !== "object") {
+    user.reads = {};
+  }
+
+  user.reads[peerId] = Date.now();
+  writeJson(USERS_FILE, users);
+
+  sendUsersTo(userId);
+}
+
+function handleRegister(ws, data) {
+  const phone = sanitizeText(data.phone);
+  const username = sanitizeText(data.username);
+
+  if (!phone) {
+    send(ws, { type: "error", message: "Введите номер телефона" });
+    return;
+  }
+
+  if (!username) {
+    send(ws, { type: "error", message: "Введите username" });
+    return;
+  }
+
+  const user = upsertUser(phone, username);
+
+  if (ws.userId && sockets.get(ws.userId) === ws) {
+    sockets.delete(ws.userId);
+  }
+
+  ws.userId = user.id;
+  sockets.set(user.id, ws);
+
+  send(ws, {
+    type: "registered",
+    user: {
       id: user.id,
       phone: user.phone,
       username: user.username
-    });
+    }
   });
 
-  broadcast({
-    type: "users",
-    users: onlineUsers
-  });
+  sendHistoryTo(user.id);
+  sendUsersTo(user.id);
+  broadcastUsers();
 }
 
-function getUserByPhone(phone) {
-  return users.find(function (u) {
-    return u.phone === phone;
-  });
-}
+function handleMessage(ws, data) {
+  if (!ws.userId) {
+    send(ws, { type: "error", message: "Сначала войдите" });
+    return;
+  }
 
-function getUserById(id) {
-  return users.find(function (u) {
-    return u.id === id;
-  });
-}
+  const fromUser = getUserById(ws.userId);
+  if (!fromUser) return;
 
-function createMessage(currentUser, data) {
-  const now = new Date();
+  const to = sanitizeText(data.to);
+  const kind = sanitizeText(data.kind) || "text";
 
-  return {
-    id: Date.now() + Math.floor(Math.random() * 1000),
-    from: currentUser.id,
-    to: Number(data.to),
-    username: currentUser.username,
-    kind: data.kind || "text",
-    text: data.text || "",
-    fileName: data.fileName || "",
-    dataUrl: data.dataUrl || "",
-    duration: data.duration || 0,
-    time: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    date: now.toLocaleDateString("ru-RU")
+  if (!to) {
+    send(ws, { type: "error", message: "Не выбран получатель" });
+    return;
+  }
+
+  const targetUser = getUserById(to);
+  if (!targetUser) {
+    send(ws, { type: "error", message: "Получатель не найден" });
+    return;
+  }
+
+  const now = nowParts();
+
+  const message = {
+    id: now.ts + Math.floor(Math.random() * 1000),
+    from: fromUser.id,
+    to,
+    username: fromUser.username,
+    kind,
+    text: kind === "text" ? sanitizeText(data.text) : "",
+    dataUrl: kind === "image" || kind === "voice" ? String(data.dataUrl || "") : "",
+    fileName: sanitizeText(data.fileName || ""),
+    date: now.date,
+    time: now.time,
+    ts: now.ts
   };
+
+  if (kind === "text" && !message.text) return;
+  if ((kind === "image" || kind === "voice") && !message.dataUrl) return;
+
+  messages.push(message);
+  writeJson(MESSAGES_FILE, messages);
+
+  send(ws, { type: "message", message });
+
+  const targetWs = sockets.get(to);
+  if (targetWs) {
+    send(targetWs, { type: "message", message });
+  }
+
+  sendUsersTo(fromUser.id);
+  sendUsersTo(to);
 }
 
-function getHistoryForUser(userId) {
-  return messages.filter(function (m) {
-    return m.from === userId || m.to === userId;
+function handleTyping(ws, data) {
+  if (!ws.userId) return;
+
+  const to = sanitizeText(data.to);
+  if (!to) return;
+
+  const fromUser = getUserById(ws.userId);
+  const targetWs = sockets.get(to);
+
+  if (!fromUser || !targetWs) return;
+
+  send(targetWs, {
+    type: "typing",
+    from: fromUser.id,
+    username: fromUser.username
   });
 }
 
-loadData();
+function handleRead(ws, data) {
+  if (!ws.userId) return;
 
-const app = express();
-app.use(express.static(path.join(__dirname, "public")));
+  const peerId = sanitizeText(data.peerId);
+  if (!peerId) return;
 
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+  markRead(ws.userId, peerId);
+}
 
-wss.on("connection", function (ws) {
-  console.log("Клиент подключился");
+const MIME_TYPES = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "application/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp",
+  ".ico": "image/x-icon"
+};
 
-  ws.on("message", function (raw) {
-    let data;
+const server = http.createServer((req, res) => {
+  let reqPath = req.url === "/" ? "/index.html" : req.url;
 
-    try {
-      data = JSON.parse(raw.toString());
-    } catch (error) {
-      send(ws, {
-        type: "error",
-        message: "Неверный формат данных"
-      });
+  if (reqPath.includes("..")) {
+    res.writeHead(400);
+    res.end("Bad request");
+    return;
+  }
+
+  const filePath = path.join(PUBLIC_DIR, reqPath);
+  const ext = path.extname(filePath).toLowerCase();
+  const mime = MIME_TYPES[ext] || "application/octet-stream";
+
+  fs.readFile(filePath, (error, data) => {
+    if (error) {
+      res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("Not found");
       return;
     }
 
-    if (data.type === "register") {
-      const phone = String(data.phone || "").trim();
-      const username = String(data.username || "").trim();
-
-      if (!phone) {
-        send(ws, {
-          type: "error",
-          message: "Введите номер телефона"
-        });
-        return;
-      }
-
-      if (!username) {
-        send(ws, {
-          type: "error",
-          message: "Введите username"
-        });
-        return;
-      }
-
-      let user = getUserByPhone(phone);
-
-      if (!user) {
-        user = {
-          id: Date.now(),
-          phone: phone,
-          username: username
-        };
-
-        users.push(user);
-      } else {
-        user.username = username;
-      }
-
-      writeJson(USERS_FILE, users);
-      clients.set(ws, user);
-
-      send(ws, {
-        type: "registered",
-        user: user
-      });
-
-      send(ws, {
-        type: "history",
-        messages: getHistoryForUser(user.id)
-      });
-
-      broadcastUsers();
-      return;
-    }
-
-    if (data.type === "message") {
-      const currentUser = clients.get(ws);
-
-      if (!currentUser) {
-        send(ws, {
-          type: "error",
-          message: "Сначала войдите"
-        });
-        return;
-      }
-
-      const recipientId = Number(data.to);
-
-      if (!recipientId) {
-        send(ws, {
-          type: "error",
-          message: "Сначала выберите пользователя"
-        });
-        return;
-      }
-
-      const recipient = getUserById(recipientId);
-
-      if (!recipient) {
-        send(ws, {
-          type: "error",
-          message: "Получатель не найден"
-        });
-        return;
-      }
-
-      const kind = data.kind || "text";
-
-      if (kind === "text") {
-        const text = String(data.text || "").trim();
-
-        if (!text) {
-          return;
-        }
-      }
-
-      if ((kind === "image" || kind === "voice") && !data.dataUrl) {
-        send(ws, {
-          type: "error",
-          message: "Файл не передан"
-        });
-        return;
-      }
-
-      const msg = createMessage(currentUser, data);
-      messages.push(msg);
-      writeJson(MESSAGES_FILE, messages);
-
-      broadcast({
-        type: "message",
-        message: msg
-      });
-
-      return;
-    }
-  });
-
-  ws.on("close", function () {
-    clients.delete(ws);
-    broadcastUsers();
+    res.writeHead(200, { "Content-Type": mime });
+    res.end(data);
   });
 });
 
-server.listen(PORT, function () {
-  console.log("Сервер работает: http://localhost:" + PORT);
+const wss = new WebSocket.Server({ server });
+
+wss.on("connection", (ws) => {
+  ws.userId = null;
+
+  ws.on("message", (raw) => {
+    try {
+      const data = JSON.parse(String(raw || "{}"));
+
+      if (data.type === "register") {
+        handleRegister(ws, data);
+        return;
+      }
+
+      if (data.type === "message") {
+        handleMessage(ws, data);
+        return;
+      }
+
+      if (data.type === "typing") {
+        handleTyping(ws, data);
+        return;
+      }
+
+      if (data.type === "read") {
+        handleRead(ws, data);
+        return;
+      }
+    } catch (error) {
+      console.error("Ошибка обработки WS:", error.message);
+      send(ws, { type: "error", message: "Ошибка обработки данных" });
+    }
+  });
+
+  ws.on("close", () => {
+    if (ws.userId && sockets.get(ws.userId) === ws) {
+      sockets.delete(ws.userId);
+
+      const user = getUserById(ws.userId);
+      if (user) {
+        user.lastSeen = Date.now();
+        writeJson(USERS_FILE, users);
+      }
+
+      broadcastUsers();
+    }
+  });
+});
+
+server.listen(PORT, () => {
+  console.log("Marsho server started on port", PORT);
 });
