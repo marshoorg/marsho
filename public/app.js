@@ -1,4 +1,4 @@
-let ws = null;
+vlet ws = null;
 let reconnectTimer = null;
 
 let me = null;
@@ -15,10 +15,11 @@ let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
 
-const STORAGE_KEY = "marsho_auth_v5";
-const OPEN_CHAT_KEY = "marsho_open_chat_v5";
+const STORAGE_KEY = "marsho_auth_ui_v1";
+const OPEN_CHAT_KEY = "marsho_open_chat_ui_v1";
+const PROFILE_KEY = "marsho_profile_ui_v1";
 
-const appDiv = document.getElementById("app");
+const appShell = document.getElementById("appShell");
 const authDiv = document.getElementById("auth");
 const phoneInput = document.getElementById("phone");
 const usernameInput = document.getElementById("username");
@@ -41,6 +42,16 @@ const replyText = document.getElementById("replyText");
 const viewer = document.getElementById("viewer");
 const viewerImg = document.getElementById("viewerImg");
 const messageMenu = document.getElementById("messageMenu");
+
+const navChats = document.getElementById("navChats");
+const navProfile = document.getElementById("navProfile");
+const navSettings = document.getElementById("navSettings");
+
+const profileAvatar = document.getElementById("profileAvatar");
+const profileNameView = document.getElementById("profileNameView");
+const profileBioView = document.getElementById("profileBioView");
+const profileNameInput = document.getElementById("profileNameInput");
+const profileBioInput = document.getElementById("profileBioInput");
 
 let notifyAudio = null;
 try {
@@ -96,6 +107,7 @@ function connectWs() {
         selectedUserId = savedChat;
       }
 
+      syncProfileWithAuth();
       renderUsers();
       renderMessages();
       return;
@@ -153,6 +165,73 @@ function saveOpenChat(userId) {
   }
 }
 
+function getProfile() {
+  try {
+    return JSON.parse(localStorage.getItem(PROFILE_KEY) || "null");
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveProfileData(data) {
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(data));
+}
+
+function syncProfileWithAuth() {
+  const saved = getProfile();
+  const baseName = saved && saved.name ? saved.name : (me ? me.username : "Marsho User");
+  const baseBio = saved && saved.bio ? saved.bio : "Тут будет твое био.";
+
+  profileNameView.textContent = baseName;
+  profileBioView.textContent = baseBio;
+  profileNameInput.value = baseName;
+  profileBioInput.value = baseBio;
+  profileAvatar.textContent = getInitial(baseName);
+  profileAvatar.style.background = avatarStyleById(baseName);
+}
+
+function loadProfileIntoInputs() {
+  syncProfileWithAuth();
+}
+
+function saveProfile() {
+  const name = String(profileNameInput.value || "").trim() || (me ? me.username : "Marsho User");
+  const bio = String(profileBioInput.value || "").trim() || "Тут будет твое био.";
+
+  saveProfileData({ name, bio });
+
+  profileNameView.textContent = name;
+  profileBioView.textContent = bio;
+  profileAvatar.textContent = getInitial(name);
+  profileAvatar.style.background = avatarStyleById(name);
+
+  alert("Профиль сохранен");
+}
+
+function switchBottomTab(tab) {
+  navChats.classList.remove("active");
+  navProfile.classList.remove("active");
+  navSettings.classList.remove("active");
+
+  appShell.classList.remove("mobile-tab-profile", "mobile-tab-settings");
+
+  if (tab === "chats") {
+    navChats.classList.add("active");
+    return;
+  }
+
+  if (tab === "profile") {
+    navProfile.classList.add("active");
+    appShell.classList.add("mobile-tab-profile");
+    return;
+  }
+
+  if (tab === "settings") {
+    navSettings.classList.add("active");
+    appShell.classList.add("mobile-tab-settings");
+  }
+}
+
 function logoutUser() {
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(OPEN_CHAT_KEY);
@@ -179,6 +258,7 @@ function logoutUser() {
   clearReply();
   closeMessageMenu();
   goBackToUsers();
+  switchBottomTab("chats");
 
   if (ws && ws.readyState === 1) {
     ws.close();
@@ -539,6 +619,7 @@ function renderUsers() {
       topAvatarDiv.textContent = getInitial(user.username);
       topAvatarDiv.style.background = avatarStyleById(user.id);
 
+      switchBottomTab("chats");
       renderUsers();
       renderMessages();
       openMobileChat();
@@ -849,12 +930,15 @@ function escapeHtml(text) {
 
 function openMobileChat() {
   if (window.innerWidth <= 700) {
-    appDiv.classList.add("mobile-chat-open");
+    appShell.classList.add("mobile-chat-open");
+    navChats.classList.add("active");
+    navProfile.classList.remove("active");
+    navSettings.classList.remove("active");
   }
 }
 
 function goBackToUsers() {
-  appDiv.classList.remove("mobile-chat-open");
+  appShell.classList.remove("mobile-chat-open");
 }
 
 searchInput.addEventListener("input", function () {
@@ -903,4 +987,6 @@ document.addEventListener("click", function () {
   }
 }, { once: true });
 
+syncProfileWithAuth();
+switchBottomTab("chats");
 connectWs();
