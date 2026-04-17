@@ -13,6 +13,7 @@ let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
 
+const appDiv = document.getElementById("app");
 const phoneInput = document.getElementById("phone");
 const usernameInput = document.getElementById("username");
 const msgInput = document.getElementById("msg");
@@ -264,7 +265,6 @@ function renderUsers() {
     if (!me) {
       return true;
     }
-
     return user.id !== me.id;
   });
 
@@ -274,7 +274,7 @@ function renderUsers() {
   }
 
   const prepared = otherUsers.map(function (user) {
-    const dialogMessages = getDialogMessages(user.id);
+    const dialogMessages = me ? getDialogMessages(user.id) : [];
     const last = dialogMessages.length ? dialogMessages[dialogMessages.length - 1] : null;
 
     let preview = "Сообщений пока нет";
@@ -282,13 +282,9 @@ function renderUsers() {
     if (last) {
       if (last.kind === "text") {
         preview = last.text || "";
-      }
-
-      if (last.kind === "image") {
+      } else if (last.kind === "image") {
         preview = "📷 Фото";
-      }
-
-      if (last.kind === "voice") {
+      } else if (last.kind === "voice") {
         preview = "🎤 Голосовое";
       }
 
@@ -367,15 +363,11 @@ function renderMessages() {
 
     if (msg.kind === "text") {
       contentHtml = "<div class='message-text'>" + escapeHtml(msg.text) + "</div>";
-    }
-
-    if (msg.kind === "image") {
+    } else if (msg.kind === "image") {
       contentHtml =
         "<div class='message-text'>Фото</div>" +
         "<img class='message-image' src='" + msg.dataUrl + "' alt='photo' />";
-    }
-
-    if (msg.kind === "voice") {
+    } else if (msg.kind === "voice") {
       contentHtml =
         "<div class='message-text'>Голосовое</div>" +
         "<audio class='message-audio' controls src='" + msg.dataUrl + "'></audio>";
@@ -416,472 +408,10 @@ function escapeHtml(text) {
 
 function openMobileChat() {
   if (window.innerWidth <= 700) {
-    document.getElementById("app").classList.add("mobile-chat-open");
+    appDiv.classList.add("mobile-chat-open");
   }
 }
 
 function goBackToUsers() {
-  document.getElementById("app").classList.remove("mobile-chat-open");
-}<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Marsho</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    :root {
-      --bg: #0e1621;
-      --panel: #17212b;
-      --panel2: #1f2c3a;
-      --line: rgba(255,255,255,0.06);
-      --text: #e8f1ff;
-      --muted: #93a4b7;
-      --primary: #4f8cff;
-      --primary-hover: #6a9dff;
-      --me: #2b5278;
-      --other: #182533;
-    }
-
-    html, body {
-      margin: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    body {
-      background:
-        radial-gradient(circle at top left, rgba(79,140,255,0.08), transparent 30%),
-        radial-gradient(circle at bottom right, rgba(43,82,120,0.18), transparent 35%),
-        var(--bg);
-    }
-
-    .app {
-      width: 100%;
-      height: 100vh;
-      display: flex;
-    }
-
-    .sidebar {
-      width: 350px;
-      min-width: 350px;
-      background: rgba(23,33,43,0.92);
-      border-right: 1px solid var(--line);
-      display: flex;
-      flex-direction: column;
-      padding: 18px 16px 14px;
-      gap: 14px;
-    }
-
-    .brand-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .brand-logo {
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, var(--primary), #7aa7ff);
-      color: white;
-      font-weight: bold;
-      font-size: 18px;
-    }
-
-    .brand-title {
-      font-size: 29px;
-      font-weight: 800;
-    }
-
-    .brand-sub {
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .card {
-      background: rgba(31,44,58,0.9);
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 14px;
-    }
-
-    .card-title {
-      font-size: 13px;
-      color: #c7d2e3;
-      margin-bottom: 12px;
-    }
-
-    input {
-      width: 100%;
-      border: 1px solid transparent;
-      outline: none;
-      background: #0f1a27;
-      color: var(--text);
-      border-radius: 14px;
-      padding: 13px 14px;
-      font-size: 14px;
-      margin-bottom: 10px;
-    }
-
-    input::placeholder {
-      color: #6f859c;
-    }
-
-    input:focus {
-      border-color: rgba(79,140,255,0.7);
-      box-shadow: 0 0 0 4px rgba(79,140,255,0.12);
-    }
-
-    .btn {
-      border: none;
-      outline: none;
-      cursor: pointer;
-      border-radius: 14px;
-      padding: 12px 14px;
-      font-weight: 700;
-      font-size: 14px;
-      transition: 0.15s ease;
-      color: white;
-    }
-
-    .btn:active {
-      transform: translateY(2px) scale(0.99);
-    }
-
-    .btn-primary {
-      background: linear-gradient(180deg, var(--primary-hover), var(--primary));
-      box-shadow: 0 8px 18px rgba(79,140,255,0.28);
-    }
-
-    .btn-ghost {
-      background: rgba(255,255,255,0.08);
-    }
-
-    .btn-danger {
-      background: linear-gradient(180deg, #ff6a6a, #ef4444);
-    }
-
-    .dialogs {
-      flex: 1;
-      overflow-y: auto;
-    }
-
-    .section-title {
-      font-size: 12px;
-      color: var(--muted);
-      text-transform: uppercase;
-      margin-top: 4px;
-    }
-
-    .user-item {
-      display: flex;
-      gap: 12px;
-      padding: 12px;
-      border-radius: 16px;
-      background: rgba(255,255,255,0.03);
-      cursor: pointer;
-      margin-bottom: 8px;
-      border: 1px solid transparent;
-    }
-
-    .user-item.active {
-      background: rgba(79,140,255,0.13);
-      border-color: rgba(79,140,255,0.45);
-    }
-
-    .avatar {
-      width: 48px;
-      height: 48px;
-      min-width: 48px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #315a84, #4f8cff);
-      color: white;
-      font-weight: bold;
-    }
-
-    .user-main {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .user-name {
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .user-preview {
-      font-size: 12px;
-      color: #cbd5e1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .main {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .topbar {
-      min-height: 74px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 18px;
-      border-bottom: 1px solid var(--line);
-      background: rgba(23,33,43,0.92);
-    }
-
-    .back-btn {
-      display: none;
-    }
-
-    .topbar-avatar {
-      width: 46px;
-      height: 46px;
-      min-width: 46px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #315a84, #4f8cff);
-      font-weight: bold;
-      color: white;
-    }
-
-    #topbar {
-      font-size: 18px;
-      font-weight: 700;
-    }
-
-    #topSub {
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .status {
-      padding: 10px 18px;
-      font-size: 12px;
-      color: #93c5fd;
-      border-bottom: 1px solid var(--line);
-      background: rgba(13,23,36,0.88);
-    }
-
-    .chat {
-      flex: 1;
-      overflow-y: auto;
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .empty {
-      background: rgba(255,255,255,0.04);
-      border-radius: 18px;
-      padding: 16px;
-      color: #cbd5e1;
-    }
-
-    .message {
-      max-width: 78%;
-      align-self: flex-start;
-      background: var(--other);
-      border-radius: 18px 18px 18px 8px;
-      padding: 10px 12px 12px;
-      word-break: break-word;
-    }
-
-    .message.mine {
-      align-self: flex-end;
-      background: var(--me);
-      border-radius: 18px 18px 8px 18px;
-    }
-
-    .message-name {
-      font-size: 12px;
-      color: #b9d5ff;
-      margin-bottom: 6px;
-      font-weight: 700;
-    }
-
-    .message-text {
-      font-size: 14px;
-      line-height: 1.45;
-    }
-
-    .message-image {
-      max-width: 260px;
-      width: 100%;
-      border-radius: 12px;
-      display: block;
-      margin-top: 4px;
-    }
-
-    .message-audio {
-      width: 100%;
-      max-width: 280px;
-      margin-top: 6px;
-    }
-
-    .composer {
-      padding: 14px 16px 16px;
-      border-top: 1px solid var(--line);
-      background: rgba(23,33,43,0.92);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .composer-top {
-      display: flex;
-      gap: 10px;
-    }
-
-    .composer-top input {
-      margin: 0;
-      flex: 1;
-      border-radius: 18px;
-    }
-
-    .composer-bottom {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .hint {
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    @media (max-width: 700px) {
-      html, body {
-        overflow: hidden;
-      }
-
-      .app {
-        position: relative;
-        width: 100%;
-        height: 100vh;
-      }
-
-      .sidebar,
-      .main {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        min-width: 100%;
-        height: 100%;
-      }
-
-      .sidebar {
-        display: flex;
-        z-index: 2;
-      }
-
-      .main {
-        display: none;
-        z-index: 3;
-      }
-
-      .app.mobile-chat-open .sidebar {
-        display: none;
-      }
-
-      .app.mobile-chat-open .main {
-        display: flex;
-      }
-
-      .back-btn {
-        display: inline-block;
-      }
-
-      .message {
-        max-width: 90%;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="app" id="app">
-    <div class="sidebar">
-      <div class="brand-row">
-        <div class="brand-logo">M</div>
-        <div>
-          <div class="brand-title">Marsho</div>
-          <div class="brand-sub">Быстро. Просто. По-своему.</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Вход / регистрация</div>
-        <input id="phone" placeholder="Номер телефона" />
-        <input id="username" placeholder="Username" />
-        <button type="button" class="btn btn-primary" onclick="registerUser()">Войти</button>
-      </div>
-
-      <div class="section-title">Пользователи онлайн</div>
-      <div class="dialogs" id="users">
-        <div class="empty">Пока никого нет онлайн</div>
-      </div>
-    </div>
-
-    <div class="main">
-      <div class="topbar">
-        <button type="button" class="btn btn-ghost back-btn" onclick="goBackToUsers()">Назад</button>
-        <div class="topbar-avatar" id="topAvatar">M</div>
-        <div>
-          <div id="topbar">Выберите пользователя</div>
-          <div id="topSub">Откройте диалог слева</div>
-        </div>
-      </div>
-
-      <div class="status" id="status">Статус: загрузка...</div>
-
-      <div class="chat" id="chat">
-        <div class="empty">Сначала войдите, затем выберите пользователя слева.</div>
-      </div>
-
-      <div class="composer">
-        <div class="composer-top">
-          <input id="msg" placeholder="Введите сообщение..." />
-          <button type="button" class="btn btn-primary" onclick="sendMessage()">Отправить</button>
-        </div>
-
-        <div class="composer-bottom">
-          <button type="button" class="btn btn-ghost" onclick="pickImage()">Фото</button>
-          <button type="button" class="btn btn-ghost" id="voiceBtn" onclick="toggleRecording()">Голосовое</button>
-          <span class="hint" id="recordHint">Готов к записи</span>
-        </div>
-
-        <input type="file" id="imageInput" class="hidden" accept="image/*" />
-      </div>
-    </div>
-  </div>
-
-  <script src="/app.js"></script>
-</body>
-</html>
-
+  appDiv.classList.remove("mobile-chat-open");
+}
