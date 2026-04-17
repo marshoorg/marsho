@@ -13,18 +13,15 @@
     :root {
       --bg: #0b141a;
       --panel: #111b21;
-      --panel-2: #202c33;
-      --panel-3: #182229;
       --line: rgba(255,255,255,0.06);
       --text: #e9edef;
       --muted: #8696a0;
       --primary: #00a884;
-      --primary-2: #128c7e;
-      --accent: #53bdeb;
+      --primary-hover: #19b394;
       --mine: #005c4b;
       --other: #202c33;
-      --soft: rgba(255,255,255,0.06);
       --danger: #e5484d;
+      --menu: #213243;
       --shadow: 0 8px 28px rgba(0,0,0,0.28);
     }
 
@@ -67,12 +64,15 @@
       display: flex;
       flex-direction: column;
       min-height: 0;
+      position: relative;
+      z-index: 20;
     }
 
     .sidebar-top {
       padding: 16px;
       border-bottom: 1px solid var(--line);
-      background: rgba(17,27,33,0.98);
+      position: relative;
+      z-index: 30;
     }
 
     .brand-row {
@@ -89,7 +89,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
+      background: linear-gradient(135deg, var(--primary), #53bdeb);
       color: white;
       font-weight: 800;
       font-size: 17px;
@@ -99,7 +99,6 @@
     .brand-title {
       font-size: 28px;
       font-weight: 800;
-      letter-spacing: 0.2px;
     }
 
     .card {
@@ -108,6 +107,8 @@
       border-radius: 18px;
       padding: 14px;
       box-shadow: var(--shadow);
+      position: relative;
+      z-index: 40;
     }
 
     .card-title {
@@ -155,14 +156,13 @@
       font-size: 13px;
       color: white;
       transition: 0.15s ease;
-    }
-
-    .btn:active {
-      transform: translateY(1px) scale(0.99);
+      position: relative;
+      z-index: 50;
+      pointer-events: auto;
     }
 
     .btn-primary {
-      background: linear-gradient(180deg, #19b394, var(--primary));
+      background: linear-gradient(180deg, var(--primary-hover), var(--primary));
       box-shadow: 0 10px 20px rgba(0,168,132,0.18);
     }
 
@@ -181,16 +181,8 @@
       flex-wrap: wrap;
     }
 
-    .grow {
-      flex: 1;
-    }
-
     .hidden {
       display: none !important;
-    }
-
-    .search-wrap {
-      margin-top: 10px;
     }
 
     .section-title {
@@ -217,7 +209,6 @@
       cursor: pointer;
       margin-bottom: 6px;
       border: 1px solid transparent;
-      transition: 0.15s ease;
     }
 
     .user-item:hover {
@@ -233,17 +224,20 @@
       box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
     }
 
-    .avatar {
-      width: 48px;
-      height: 48px;
-      min-width: 48px;
-      border-radius: 50%;
+    .avatar, .topbar-avatar, .profile-avatar {
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
       font-weight: 800;
       user-select: none;
+    }
+
+    .avatar {
+      width: 48px;
+      height: 48px;
+      min-width: 48px;
+      border-radius: 50%;
       flex-shrink: 0;
     }
 
@@ -264,14 +258,12 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      min-width: 0;
     }
 
     .user-time {
       font-size: 11px;
       color: var(--muted);
       white-space: nowrap;
-      flex-shrink: 0;
     }
 
     .user-preview {
@@ -313,9 +305,7 @@
       min-width: 0;
       display: flex;
       flex-direction: column;
-      background:
-        linear-gradient(rgba(11,20,26,0.92), rgba(11,20,26,0.92)),
-        var(--bg);
+      background: rgba(11,20,26,0.98);
     }
 
     .topbar {
@@ -339,11 +329,6 @@
       height: 46px;
       min-width: 46px;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 800;
       flex-shrink: 0;
     }
 
@@ -430,7 +415,6 @@
       border-radius: 18px 18px 18px 8px;
       padding: 10px 12px 12px;
       word-break: break-word;
-      position: relative;
       box-shadow: var(--shadow);
     }
 
@@ -500,7 +484,6 @@
       margin-top: 8px;
       font-size: 11px;
       color: #d4e2ee;
-      opacity: 0.95;
       text-align: right;
     }
 
@@ -629,6 +612,7 @@
       display: flex;
       align-items: stretch;
       flex-shrink: 0;
+      z-index: 5;
     }
 
     .nav-btn {
@@ -692,12 +676,7 @@
       height: 72px;
       min-width: 72px;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       font-size: 28px;
-      color: white;
-      font-weight: 800;
     }
 
     .profile-name {
@@ -741,9 +720,7 @@
         position: relative;
       }
 
-      .sidebar,
-      .main,
-      .mobile-screen {
+      .sidebar, .main, .mobile-screen {
         position: absolute;
         inset: 0;
         width: 100%;
@@ -817,14 +794,19 @@
             <input id="phone" type="text" placeholder="Номер телефона" />
             <input id="username" type="text" placeholder="Username" />
             <div class="row">
-              <button type="button" class="btn btn-primary" onclick="registerUser()">Войти</button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick="registerUser()"
+                style="position: relative; z-index: 99999; pointer-events: auto;"
+              >
+                Войти
+              </button>
               <button type="button" class="btn btn-ghost" onclick="logoutUser()">Выйти</button>
             </div>
           </div>
 
-          <div class="search-wrap">
-            <input id="searchInput" type="text" placeholder="Поиск по пользователям..." />
-          </div>
+          <input id="searchInput" type="text" placeholder="Поиск по пользователям..." />
         </div>
 
         <div class="section-title">Пользователи</div>
@@ -906,16 +888,16 @@
         <div class="profile-card">
           <div class="settings-list">
             <div class="settings-item">
-              <div class="settings-item-title">Marsho v6 UI</div>
-              <div class="settings-item-sub">Нижняя навигация, профиль, более живой внешний вид.</div>
+              <div class="settings-item-title">Marsho Stable UI</div>
+              <div class="settings-item-sub">Нижняя навигация, профиль, поиск, reply и более аккуратный интерфейс.</div>
             </div>
             <div class="settings-item">
-              <div class="settings-item-title">Статус</div>
-              <div class="settings-item-sub">Текущий чат и активный профиль сохраняются локально.</div>
+              <div class="settings-item-title">Сохранение</div>
+              <div class="settings-item-sub">Профиль, выбранный чат и вход сохраняются локально.</div>
             </div>
             <div class="settings-item">
-              <div class="settings-item-title">Будущее</div>
-              <div class="settings-item-sub">Сюда потом можно добавить тему, уведомления и приватность.</div>
+              <div class="settings-item-title">Следующий шаг</div>
+              <div class="settings-item-sub">Потом можно добавить PWA, иконку и упаковку в Android app.</div>
             </div>
           </div>
         </div>
