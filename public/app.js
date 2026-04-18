@@ -26,6 +26,27 @@ const usernameInput = document.getElementById("username");
 const searchInput = document.getElementById("searchInput");
 const messageSearchInput = document.getElementById("messageSearchInput");
 const msgInput = document.getElementById("msg");
+msgInput.addEventListener("input", function () {
+  const text = msgInput.value.trim();
+
+  const sendBtn = document.querySelector(".tg-send-btn");
+  const voiceBtn = document.querySelector(".tg-inner-voice-btn");
+
+  if (!sendBtn || !voiceBtn) return;
+
+  if (text.length > 0) {
+    sendBtn.style.display = "flex";
+    voiceBtn.style.display = "none";
+  } else {
+    sendBtn.style.display = "none";
+    voiceBtn.style.display = "flex";
+  }
+});
+
+setTimeout(() => {
+  msgInput.dispatchEvent(new Event("input"));
+}, 100);
+
 const statusDiv = document.getElementById("status");
 const typingBar = document.getElementById("typingBar");
 const usersDiv = document.getElementById("users");
