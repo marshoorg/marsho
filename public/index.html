@@ -775,6 +775,77 @@
         min-width: 100%;
       }
     }
+    ...твой старый CSS...
+
+/* ВОТ СЮДА ВСТАВЛЯЕШЬ НОВЫЙ CSS */
+.nav-btn,
+.btn,
+.user-item,
+.message {
+  transition: transform 0.18s ease, opacity 0.18s ease, background 0.2s ease;
+}
+
+.nav-btn:active,
+.btn:active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+.user-item:active {
+  transform: scale(0.98);
+}
+
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+}
+
+.nav-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+}
+
+.fab {
+  position: fixed;
+  right: 18px;
+  bottom: 84px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #00a884, #008f72);
+  color: white;
+  font-size: 28px;
+  border: none;
+}
+
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple span {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple 0.5s linear;
+  background: rgba(255,255,255,0.3);
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+</style>
+
   </style>
 </head>
 <body>
@@ -904,110 +975,48 @@
       </section>
     </div>
 
-<section class="mobile-screen" id="profileScreen">
-  ...
-</section>
+  <nav class="bottom-nav" id="bottomNav">
+  <button class="nav-btn active ripple" id="navChats" type="button" onclick="ripple(event); switchBottomTab('chats')">
+    <span class="nav-icon">
+      <svg viewBox="0 0 24 24">
+        <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
+      </svg>
+    </span>
+    <span>Chats</span>
+    <span class="nav-badge hidden" id="navChatsBadge">0</span>
+  </button>
 
-<section class="mobile-screen" id="callsScreen">
-  <div class="profile-card">
-    <div class="settings-item">
-      <div class="settings-item-title">Calls</div>
-      <div class="settings-item-sub">История звонков</div>
-    </div>
+  <button class="nav-btn ripple" id="navCalls" type="button" onclick="ripple(event); switchBottomTab('calls')">
+    <span class="nav-icon">
+      <svg viewBox="0 0 24 24">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.63a2 2 0 0 1-.45 2.11L8 9.91a16 16 0 0 0 6.09 6.09l1.45-1.29a2 2 0 0 1 2.11-.45c.85.3 1.73.51 2.63.63A2 2 0 0 1 22 16.92z"/>
+      </svg>
+    </span>
+    <span>Calls</span>
+  </button>
 
-    <div class="settings-item">
-      <div class="user-item" style="margin-bottom:0;">
-        <div class="avatar" style="background: linear-gradient(135deg,#315a84,#4f8cff);">A</div>
-        <div class="user-main">
-          <div class="user-top">
-            <div class="user-name">Amina</div>
-            <div class="user-time">12:48</div>
-          </div>
-          <div class="user-preview">Outgoing audio call</div>
-          <div class="user-status">Yesterday</div>
-        </div>
-      </div>
-    </div>
+  <button class="nav-btn ripple" id="navProfile" type="button" onclick="ripple(event); switchBottomTab('profile')">
+    <span class="nav-icon">
+      <svg viewBox="0 0 24 24">
+        <path d="M20 21a8 8 0 0 0-16 0"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </span>
+    <span>Profile</span>
+  </button>
 
-    <div class="settings-item">
-      <div class="user-item" style="margin-bottom:0;">
-        <div class="avatar" style="background: linear-gradient(135deg,#059669,#34d399);">M</div>
-        <div class="user-main">
-          <div class="user-top">
-            <div class="user-name">Murad</div>
-            <div class="user-time">09:14</div>
-          </div>
-          <div class="user-preview">Missed video call</div>
-          <div class="user-status">Today</div>
-        </div>
-      </div>
-    </div>
+  <button class="nav-btn ripple" id="navSettings" type="button" onclick="ripple(event); switchBottomTab('settings')">
+    <span class="nav-icon">
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </span>
+    <span>Settings</span>
+  </button>
+</nav>
 
-    <div class="row">
-      <button type="button" class="btn btn-primary ripple" onclick="ripple(event); fakeCall()">Start call</button>
-    </div>
-  </div>
-</section>
-
-<section class="mobile-screen" id="settingsScreen">
-  ...
-</section>
-    
-<section class="mobile-screen" id="callsScreen">
-  <div class="profile-card">
-
-    <div class="settings-list">
-
-      <div class="settings-item">
-        <div class="settings-item-title">Marsho Stable UI</div>
-        <div class="settings-item-sub">Нижняя навигация, профиль, поиск и улучшенный интерфейс.</div>
-      </div>
-
-      <div class="settings-item">
-        <div class="settings-item-title">Сохранение</div>
-        <div class="settings-item-sub">Данные сохраняются локально.</div>
-      </div>
-
-    </div>
-  </div>
-
-    <div class="settings-item">
-      <div class="user-item" style="margin-bottom:0;">
-        <div class="avatar" style="background: linear-gradient(135deg,#315a84,#4f8cff);">A</div>
-        <div class="user-main">
-          <div class="user-top">
-            <div class="user-name">Amina</div>
-            <div class="user-time">12:48</div>
-          </div>
-          <div class="user-preview">Outgoing audio call</div>
-          <div class="user-status">Yesterday</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="settings-item">
-      <div class="user-item" style="margin-bottom:0;">
-        <div class="avatar" style="background: linear-gradient(135deg,#059669,#34d399);">M</div>
-        <div class="user-main">
-          <div class="user-top">
-            <div class="user-name">Murad</div>
-            <div class="user-time">09:14</div>
-          </div>
-          <div class="user-preview">Missed video call</div>
-          <div class="user-status">Today</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row">
-      <button type="button" class="btn btn-primary ripple" onclick="ripple(event); fakeCall()">Start call</button>
-    </div>
-  </div>
-</section>
-
-<section class="mobile-screen" id="settingsScreen">
-  ...
-</section>
+<button class="fab ripple" id="newChatFab" type="button" onclick="ripple(event); openNewChatPrompt()">+</button>
 
   </div>
 
