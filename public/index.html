@@ -1509,7 +1509,43 @@
 </div>
 
 <nav class="bottom-nav tg-bottom-nav" id="bottomNav">
-  ...весь тот код кнопок...
+
+  <button class="nav-btn tg-nav-btn active ripple" id="navChats" onclick="switchBottomTab('chats')">
+    <span class="nav-icon">
+      <svg viewBox="0 0 24 24">
+        <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
+      </svg>
+    </span>
+    <span>Chats</span>
+  </button>
+
+  <button class="nav-btn tg-nav-btn ripple" id="navCalls" onclick="switchBottomTab('calls')">
+    <span class="nav-icon">
+      <svg viewBox="0 0 24 24">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07"/>
+      </svg>
+    </span>
+    <span>Calls</span>
+  </button>
+
+  <button class="nav-btn tg-nav-btn ripple" id="navProfile" onclick="switchBottomTab('profile')">
+    <span class="nav-icon">
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </span>
+    <span>Profile</span>
+  </button>
+
+  <button class="nav-btn tg-nav-btn ripple" id="navSettings" onclick="switchBottomTab('settings')">
+    <span class="nav-icon">
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    </span>
+    <span>Settings</span>
+  </button>
+
 </nav>
 
 <button class="fab ripple" id="newChatFab" type="button" onclick="ripple(event); openNewChatPrompt()">+</button>
