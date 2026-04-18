@@ -207,6 +207,10 @@ function saveProfileData(data) {
 }
 
 function syncProfileWithAuth() {
+  if (!profileAvatar || !profileNameView || !profileBioView || !profileNameInput || !profileBioInput) {
+    return;
+  }
+
   const saved = getProfile();
   const baseName = saved && saved.name ? saved.name : (me ? me.username : "Marsho User");
   const baseBio = saved && saved.bio ? saved.bio : "Тут будет твое био.";
@@ -237,7 +241,11 @@ function saveProfile() {
   alert("Профиль сохранен");
 }
 
-}function switchBottomTab(tab) {
+function switchBottomTab(tab) {
+  if (!appShell || !navChats || !navProfile || !navSettings || !navCalls) {
+    return;
+  }
+
   navChats.classList.remove("active");
   navCalls.classList.remove("active");
   navProfile.classList.remove("active");
@@ -1053,12 +1061,12 @@ function escapeHtml(text) {
 }
 
 function openMobileChat() {
-  if (window.innerWidth <= 700) {
+  if (window.innerWidth <= 700 && appShell) {
     appShell.classList.add("mobile-chat-open");
-    navChats.classList.add("active");
-    navCalls.classList.remove("active");
-    navProfile.classList.remove("active");
-    navSettings.classList.remove("active");
+    if (navChats) navChats.classList.add("active");
+    if (navCalls) navCalls.classList.remove("active");
+    if (navProfile) navProfile.classList.remove("active");
+    if (navSettings) navSettings.classList.remove("active");
   }
 }
 
@@ -1112,6 +1120,6 @@ document.addEventListener("click", function () {
   }
 }, { once: true });
 
+connectWs();
 syncProfileWithAuth();
 switchBottomTab("chats");
-connectWs();
