@@ -579,6 +579,15 @@ function openNewChatPrompt() {
 
   topbarDiv.textContent = "Чат с " + user.username;
   topSubDiv.textContent = user.statusText || "";
+  const oldDot = topAvatarDiv.querySelector(".online-dot");
+if (oldDot) oldDot.remove();
+
+if (String(user.statusText || "").toLowerCase().includes("online")) {
+  const dot = document.createElement("span");
+  dot.className = "online-dot";
+  topAvatarDiv.appendChild(dot);
+}
+
   topAvatarDiv.textContent = getInitial(user.username);
   topAvatarDiv.style.background = avatarStyleById(user.id);
 
