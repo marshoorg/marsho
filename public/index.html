@@ -605,39 +605,101 @@
       background: rgba(255,255,255,0.08);
     }
 
-    .bottom-nav {
-      height: 66px;
-      background: rgba(17,27,33,0.98);
-      border-top: 1px solid var(--line);
-      display: flex;
-      align-items: stretch;
-      flex-shrink: 0;
-      z-index: 5;
-    }
+   .bottom-nav {
+  height: 78px;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: rgba(17,27,33,0.98);
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  flex-shrink: 0;
+  z-index: 50;
+  position: relative;
+}
 
-    .nav-btn {
-      flex: 1;
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      font-size: 12px;
-      cursor: pointer;
-    }
+.nav-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #8c98a4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  padding: 8px 4px 10px;
+  min-width: 0;
+}
 
-    .nav-btn.active {
-      color: var(--primary);
-    }
+.nav-btn.active {
+  color: #00a884;
+}
 
-    .nav-icon {
-      font-size: 18px;
-      font-weight: 700;
-      line-height: 1;
-    }
+.nav-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-icon svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.nav-badge {
+  position: absolute;
+  top: 6px;
+  right: 16px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #00a884;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}
+
+.fab {
+  position: fixed;
+  right: 18px;
+  bottom: calc(92px + env(safe-area-inset-bottom));
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #19b394, #00a884);
+  color: white;
+  font-size: 30px;
+  font-weight: 700;
+  box-shadow: 0 12px 28px rgba(0,168,132,0.28);
+  cursor: pointer;
+  z-index: 1000;
+}
+
+@media (min-width: 701px) {
+  .fab {
+    right: 26px;
+    bottom: 26px;
+  }
+}
+
 
     .mobile-screen {
       display: none;
