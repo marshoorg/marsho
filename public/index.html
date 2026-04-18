@@ -1173,6 +1173,57 @@
   border: 1px solid rgba(255,255,255,0.04);
   backdrop-filter: blur(8px);
 }
+.message {
+  animation: msgIn 0.25s ease;
+}
+
+@keyframes msgIn {
+  from {
+    transform: translateY(10px) scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+.message {
+  animation: msgIn 0.25s ease;
+}
+
+@keyframes msgIn {
+  from {
+    transform: translateY(10px) scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+.message {
+  transition: transform 0.1s;
+}
+
+.message:active {
+  transform: scale(0.97);
+}
+.tg-topbar-avatar,
+.topbar-avatar {
+  position: relative;
+}
+
+.online-dot {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #27d17f;
+  border: 2px solid rgba(17,27,33,0.95);
+  box-shadow: 0 0 0 2px rgba(39,209,127,0.12);
+}
 
 </style>
 
