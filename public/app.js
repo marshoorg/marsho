@@ -827,9 +827,19 @@ function renderMessages() {
     if (msg.edited) infoParts.push("Edited");
     if (String(msg.from) === String(me.id) && msg.status) infoParts.push(msg.status);
 
-    if (infoParts.length > 0) {
-      infoHtml = "<div class='message-status'>" + escapeHtml(infoParts.join(" · ")) + "</div>";
-    }
+  if (String(msg.from) === String(me.id)) {
+  let statusMark = "✓";
+
+  if (String(msg.status || "").toLowerCase().includes("read")) {
+    statusMark = "✓✓";
+  } else if (String(msg.status || "").toLowerCase().includes("delivered")) {
+    statusMark = "✓✓";
+  }
+
+  infoHtml = "<div class='message-status'>" + escapeHtml(msg.time || "") + " " + statusMark + "</div>";
+} else {
+  infoHtml = "<div class='message-time'>" + escapeHtml(msg.time || "") + "</div>";
+}
 
   div.innerHTML =
   "<div class='message-head'>" +
