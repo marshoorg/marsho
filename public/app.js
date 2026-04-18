@@ -44,8 +44,11 @@ const viewerImg = document.getElementById("viewerImg");
 const messageMenu = document.getElementById("messageMenu");
 
 const navChats = document.getElementById("navChats");
+const navCalls = document.getElementById("navCalls");
 const navProfile = document.getElementById("navProfile");
 const navSettings = document.getElementById("navSettings");
+const navChatsBadge = document.getElementById("navChatsBadge");
+
 
 const profileAvatar = document.getElementById("profileAvatar");
 const profileNameView = document.getElementById("profileNameView");
@@ -213,7 +216,7 @@ function switchBottomTab(tab) {
   navProfile.classList.remove("active");
   navSettings.classList.remove("active");
 
-  appShell.classList.remove("mobile-tab-profile", "mobile-tab-settings");
+  appShell.classList.remove("mobile-tab-profile", "mobile-tab-settings", "mobile-tab-calls");
 
   if (tab === "chats") {
     navChats.classList.add("active");
@@ -225,6 +228,16 @@ function switchBottomTab(tab) {
     appShell.classList.add("mobile-tab-profile");
     return;
   }
+  
+  if (tab === "calls") {
+  navCalls.classList.add("active");
+  appShell.classList.add("mobile-tab-calls");
+  return;
+}
+
+if (tab === "calls") {
+  document.getElementById("callsScreen").style.display = "block";
+}
 
   if (tab === "settings") {
     navSettings.classList.add("active");
