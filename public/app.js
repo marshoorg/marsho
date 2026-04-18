@@ -85,14 +85,17 @@ try {
 }
 
 function wsUrl() {
-  return (location.protocol === "https:" ? "wss://" : "ws://") + location.host;
+ return (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/";
 }
 
 function connectWs() {
+  console.log("WS: пытаюсь подключиться", wsUrl());
+
   ws = new WebSocket(wsUrl());
 
   ws.onopen = function () {
-    statusDiv.textContent = "Статус: подключено к Marsho";
+    console.log("WS: ОТКРЫТ");
+    statusDiv.textContent = "Подключено";
 
     const saved = loadSavedAuth();
     if (saved && saved.phone && saved.username) {
@@ -107,20 +110,22 @@ function connectWs() {
     }
   };
 
-  ws.onerror = function () {
-    statusDiv.textContent = "Статус: ошибка подключения";
+  ws.onerror = function (e) {
+    console.log("WS: ОШИБКА", e);
+    statusDiv.textContent = "Ошибка подключения";
   };
 
   ws.onclose = function () {
-    statusDiv.textContent = "Статус: соединение закрыто";
-    if (reconnectTimer) clearTimeout(reconnectTimer);
-    reconnectTimer = setTimeout(connectWs, 1500);
+    console.log("WS: ЗАКРЫТ");
+    statusDiv.textContent = "Соединение закрыто";
+
+    setTimeout(connectWs, 2000);
   };
 
   ws.onmessage = function (event) {
     const data = JSON.parse(event.data);
 
-    if (data.type === "registered") {
+     if (data.type === "registered") {
       me = data.user;
       saveAuth(me.phone, me.username);
       authDiv.classList.add("hidden");
@@ -168,6 +173,11 @@ function connectWs() {
     }
   };
 }
+
+    statusDiv.textContent = "Статус: соединение закрыто";
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(connectWs, 1500);
+  };
 
 function saveAuth(phone, username) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ phone, username }));
