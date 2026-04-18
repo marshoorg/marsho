@@ -85,7 +85,7 @@ try {
 }
 
 function wsUrl() {
- return (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/";
+ return (location.protocol === "https:" ? "wss://" : "ws://") + location.host;
 }
 
 function connectWs() {
