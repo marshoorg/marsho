@@ -810,14 +810,15 @@ function renderMessages() {
       infoHtml = "<div class='message-status'>" + escapeHtml(infoParts.join(" · ")) + "</div>";
     }
 
-    div.innerHTML =
-      "<div class='message-head'>" +
-        "<div class='message-name'>" + escapeHtml(msg.username || "") + "</div>" +
-        "<div class='message-time'>" + escapeHtml((msg.date || "") + " " + (msg.time || "")) + "</div>" +
-      "</div>" +
-      replyHtml +
-      contentHtml +
-      infoHtml;
+  div.innerHTML =
+  "<div class='message-head'>" +
+    "<div class='message-name'>" + escapeHtml(msg.username || "") + "</div>" +
+  "</div>" +
+  replyHtml +
+  contentHtml +
+  "<div class='message-time'>" + escapeHtml(msg.time || "") + "</div>" +
+  infoHtml;
+
 
     const img = div.querySelector(".message-image");
     if (img) {
