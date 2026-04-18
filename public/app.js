@@ -493,6 +493,81 @@ function togglePin(peerId, shouldPin) {
     action: shouldPin ? "pin" : "unpin"
   }));
 }
+// ===== NEW UI FUNCTIONS =====
+
+function ripple(e) {
+  const btn = e.currentTarget;
+  const circle = document.createElement("span");
+  const size = Math.max(btn.clientWidth, btn.clientHeight);
+
+  circle.style.position = "absolute";
+  circle.style.borderRadius = "50%";
+  circle.style.background = "rgba(255,255,255,0.3)";
+  circle.style.transform = "scale(0)";
+  circle.style.animation = "ripple 0.5s linear";
+  circle.style.width = size + "px";
+  circle.style.height = size + "px";
+  circle.style.left = e.offsetX - size / 2 + "px";
+  circle.style.top = e.offsetY - size / 2 + "px";
+
+  btn.appendChild(circle);
+
+  setTimeout(() => {
+    circle.remove();
+  }, 500);
+}
+
+function fakeCall() {
+  alert("📞 Звонки скоро будут");
+}
+
+function updateNavBadge() {
+  let totalUnread = 0;
+
+  users.forEach(function (u) {
+    totalUnread += Number(u.unreadCount || 0);
+  });
+
+  if (totalUnread > 0) {
+    navChatsBadge.textContent = totalUnread > 99 ? "99+" : String(totalUnread);
+    navChatsBadge.classList.remove("hidden");
+  } else {
+    navChatsBadge.classList.add("hidden");
+  }
+}
+
+function openNewChatPrompt() {
+  if (!users.length) {
+    alert("Пока нет пользователей");
+    return;
+  }
+
+  const list = users.map(function (u, i) {
+    return (i + 1) + ". " + u.username;
+  }).join("\n");
+
+  const value = prompt("Выбери номер пользователя:\n" + list);
+  const num = Number(value);
+
+  if (!num || num < 1 || num > users.length) return;
+
+  const user = users[num - 1];
+  selectedUserId = user.id;
+
+  saveOpenChat(user.id);
+
+  topbarDiv.textContent = "Чат с " + user.username;
+  topSubDiv.textContent = user.statusText || "";
+  topAvatarDiv.textContent = getInitial(user.username);
+  topAvatarDiv.style.background = avatarStyleById(user.id);
+
+  switchBottomTab("chats");
+
+  renderUsers();
+  renderMessages();
+  openMobileChat();
+  sendRead(user.id);
+}
 
 function avatarStyleById(id) {
   const colors = [
@@ -554,8 +629,10 @@ function getLastMessageFor(userId) {
 
 function renderUsers() {
   usersDiv.innerHTML = "";
+  updateNavBadge();
 
   let filtered = users.slice();
+
 
   const q = String(searchInput.value || "").trim().toLowerCase();
   if (q) {
