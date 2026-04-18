@@ -174,11 +174,6 @@ function connectWs() {
   };
 }
 
-    statusDiv.textContent = "Статус: соединение закрыто";
-    if (reconnectTimer) clearTimeout(reconnectTimer);
-    reconnectTimer = setTimeout(connectWs, 1500);
-  };
-
 function saveAuth(phone, username) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ phone, username }));
 }
@@ -242,8 +237,9 @@ function saveProfile() {
   alert("Профиль сохранен");
 }
 
-function switchBottomTab(tab) {
+}function switchBottomTab(tab) {
   navChats.classList.remove("active");
+  navCalls.classList.remove("active");
   navProfile.classList.remove("active");
   navSettings.classList.remove("active");
 
@@ -254,27 +250,24 @@ function switchBottomTab(tab) {
     return;
   }
 
+  if (tab === "calls") {
+    navCalls.classList.add("active");
+    appShell.classList.add("mobile-tab-calls");
+    return;
+  }
+
   if (tab === "profile") {
     navProfile.classList.add("active");
     appShell.classList.add("mobile-tab-profile");
     return;
   }
-  
-  if (tab === "calls") {
-  navCalls.classList.add("active");
-  appShell.classList.add("mobile-tab-calls");
-  return;
-}
-
-if (tab === "calls") {
-  document.getElementById("callsScreen").style.display = "block";
-}
 
   if (tab === "settings") {
     navSettings.classList.add("active");
     appShell.classList.add("mobile-tab-settings");
   }
 }
+
 
 function logoutUser() {
   localStorage.removeItem(STORAGE_KEY);
@@ -860,15 +853,13 @@ function renderMessages() {
   infoHtml = "<div class='message-time'>" + escapeHtml(msg.time || "") + "</div>";
 }
 
-  div.innerHTML =
+div.innerHTML =
   "<div class='message-head'>" +
     "<div class='message-name'>" + escapeHtml(msg.username || "") + "</div>" +
   "</div>" +
   replyHtml +
   contentHtml +
-  "<div class='message-time'>" + escapeHtml(msg.time || "") + "</div>" +
   infoHtml;
-
 
     const img = div.querySelector(".message-image");
     if (img) {
@@ -1065,6 +1056,7 @@ function openMobileChat() {
   if (window.innerWidth <= 700) {
     appShell.classList.add("mobile-chat-open");
     navChats.classList.add("active");
+    navCalls.classList.remove("active");
     navProfile.classList.remove("active");
     navSettings.classList.remove("active");
   }
