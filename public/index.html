@@ -1234,6 +1234,46 @@
     display: flex !important;
   }
 }
+.clean-nav-btn {
+  transition: transform 0.12s ease, opacity 0.12s ease, color 0.2s ease;
+}
+
+.clean-nav-btn:active {
+  transform: scale(0.92);
+  opacity: 0.85;
+}
+    
+.clean-nav-btn.active {
+  color: #2ed3b7;
+  text-shadow: 0 0 10px rgba(46, 211, 183, 0.35);
+}
+    
+.clean-nav-btn.active {
+  color: #2ed3b7;
+}
+
+.clean-nav-btn.active::before {
+  content: "";
+  position: absolute;
+  inset: 8px 12px;
+  border-radius: 16px;
+  background: rgba(46, 211, 183, 0.08);
+  z-index: -1;
+}
+    
+.clean-nav-btn {
+  transition: transform 0.12s ease, opacity 0.12s ease, color 0.2s ease;
+}
+
+.clean-nav-btn:active {
+  transform: scale(0.92);
+  opacity: 0.85;
+}
+
+.clean-nav-btn.active {
+  color: #2ed3b7;
+  text-shadow: 0 0 10px rgba(46, 211, 183, 0.35);
+}
 
 </style>
 
