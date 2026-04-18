@@ -520,15 +520,17 @@
       padding: 0;
     }
 
-    .composer {
-      padding: 14px 16px 16px;
-      border-top: 1px solid var(--line);
-      background: rgba(17,27,33,0.98);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      flex-shrink: 0;
-    }
+   .composer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(15, 20, 25, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
 
     .composer-top {
       display: flex;
@@ -1214,14 +1216,32 @@
       </aside>
 
       <main class="main" id="chatScreen">
-        <div class="topbar">
-          <button type="button" class="btn btn-ghost back-btn" onclick="goBackToUsers()">Назад</button>
-          <div class="topbar-avatar" id="topAvatar">M</div>
-          <div>
-            <div id="topbar">Выберите пользователя</div>
-            <div id="topSub">Откройте диалог слева</div>
-          </div>
-        </div>
+      <div class="topbar tg-topbar">
+  <button type="button" class="tg-back-btn" onclick="goBackToUsers()">
+    <svg viewBox="0 0 24 24">
+      <path d="M15 18l-6-6 6-6"/>
+    </svg>
+  </button>
+  <div class="topbar-avatar tg-topbar-avatar" id="topAvatar">M</div>
+  <div class="tg-topbar-info">
+    <div id="topbar" class="tg-topbar-name">Выберите пользователя</div>
+    <div id="topSub" class="tg-topbar-status">Откройте диалог слева</div>
+  </div>
+  <div class="tg-topbar-actions">
+    <button type="button" class="tg-icon-btn">
+      <svg viewBox="0 0 24 24">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.63 2.63a2 2 0 0 1-.45 2.11L8 9.91a16 16 0 0 0 6.09 6.09l1.45-1.29a2 2 0 0 1 2.11-.45c.85.3 1.73.51 2.63.63A2 2 0 0 1 22 16.92z"/>
+      </svg>
+    </button>
+    <button type="button" class="tg-icon-btn">
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="5" r="1.8"/>
+        <circle cx="12" cy="12" r="1.8"/>
+        <circle cx="12" cy="19" r="1.8"/>
+      </svg>
+    </button>
+  </div>
+</div>
 
         <div class="status" id="status">Статус: загрузка...</div>
         <div class="typing-bar" id="typingBar"></div>
