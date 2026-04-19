@@ -1321,6 +1321,16 @@
   font-weight: 700;
   font-size: 15px;
 }
+    
+.auth-box {
+  position: relative;
+  z-index: 1000;
+}
+
+.auth-btn {
+  pointer-events: auto;
+  cursor: pointer;
+}
 
 </style>
 
@@ -1342,7 +1352,7 @@
 
   <input id="phone" type="text" placeholder="Введите номер" />
 
-  <button class="auth-btn" onclick="registerUser()">
+<button class="auth-btn" onclick="alert('работает')">
     Продолжить
   </button>
 </div>
