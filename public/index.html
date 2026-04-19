@@ -933,21 +933,23 @@
     
 .tg-composer {
   position: fixed;
-  bottom: 70px;
   left: 0;
   right: 0;
+  bottom: 74px;
   z-index: 1000;
 
-  padding: 10px 12px;
-  background: rgba(17,27,33,0.95);
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  background: rgba(17,27,33,0.96);
   backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-top: 1px solid rgba(255,255,255,0.06);
-  }
+}
 
 .tg-composer-row {
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
 }
 
 .tg-circle-btn {
@@ -981,13 +983,15 @@
 .tg-send-btn {
   width: 52px;
   height: 52px;
+  min-width: 52px;
+  border: none;
   border-radius: 50%;
-  background: linear-gradient(180deg, #2ed3b7, #20bfa6);
+  background: linear-gradient(180deg, #41d7bf, #20bfa6);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 18px rgba(46,211,183,0.3);
-  transition: 0.2s;
+  box-shadow: 0 8px 22px rgba(46,211,183,0.28);
 }
 
 .tg-send-btn:active {
@@ -997,13 +1001,13 @@
 .tg-input-wrap {
   flex: 1;
   min-width: 0;
-  height: 56px;
-  border-radius: 28px;
-  background: rgba(9,17,22,0.9);
-  border: 1px solid rgba(255,255,255,0.06);
+  height: 58px;
+  border-radius: 29px;
+  background: rgba(9,17,22,0.96);
+  border: 1px solid rgba(255,255,255,0.05);
   display: flex;
   align-items: center;
-  padding: 0 12px 0 18px;
+  padding: 0 10px 0 18px;
 }
 
 .tg-message-input {
@@ -1013,25 +1017,30 @@
   background: transparent;
   border: none;
   outline: none;
-  font-size: 17px;
+  margin: 0;
+  padding: 0;
+  font-size: 16px;
   color: #ecf2f8;
+  box-shadow: none !important;
 }
-
+  
 .tg-message-input::placeholder {
   color: #7f8d98;
 }
 
 .tg-inner-voice-btn {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border: none;
   border-radius: 50%;
-  background: rgba(255,255,255,0.08);
+  background: transparent;
+  color: #90a2b2;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9fb3c8;
 }
-
+    
 .tg-inner-voice-btn svg {
   width: 20px;
   height: 20px;
@@ -1330,6 +1339,49 @@
 .auth-btn {
   pointer-events: auto;
   cursor: pointer;
+}
+    
+.clean-nav-btn,
+.tg-nav-btn,
+.auth-btn,
+.tg-send-btn,
+.tg-circle-btn,
+.tg-inner-voice-btn {
+  position: relative;
+  overflow: hidden;
+  transition: background 0.18s ease, opacity 0.18s ease, transform 0.12s ease;
+}
+
+.clean-nav-btn:active,
+.tg-nav-btn:active,
+.auth-btn:active,
+.tg-send-btn:active,
+.tg-circle-btn:active,
+.tg-inner-voice-btn:active {
+  transform: scale(0.96);
+}
+
+.clean-nav-btn::after,
+.tg-nav-btn::after,
+.auth-btn::after,
+.tg-send-btn::after,
+.tg-circle-btn::after,
+.tg-inner-voice-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0);
+  transition: background 0.16s ease;
+  pointer-events: none;
+}
+
+.clean-nav-btn:active::after,
+.tg-nav-btn:active::after,
+.auth-btn:active::after,
+.tg-send-btn:active::after,
+.tg-circle-btn:active::after,
+.tg-inner-voice-btn:active::after {
+  background: rgba(255,255,255,0.12);
 }
 
 </style>
