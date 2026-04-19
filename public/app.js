@@ -129,6 +129,8 @@ function connectWs() {
       me = data.user;
       saveAuth(me.phone, me.username);
       authDiv.classList.add("hidden");
+       const bottomNav = document.getElementById("bottomNav");
+if (bottomNav) bottomNav.classList.remove("hidden");
        
        document.getElementById("bottomNav").classList.remove("hidden");
        
@@ -291,6 +293,8 @@ function logoutUser() {
   replyTo = null;
 
   authDiv.classList.remove("hidden");
+  const bottomNav = document.getElementById("bottomNav");
+if (bottomNav) bottomNav.classList.add("hidden");
   phoneInput.value = "";
   usernameInput.value = "";
   searchInput.value = "";
