@@ -1567,28 +1567,24 @@
         </div>
       </section>
 
-      <section class="mobile-screen" id="settingsScreen">
-        <div class="profile-card">
-          <div class="settings-list">
-            <div class="settings-item">
-              <div class="settings-item-title">Marsho Stable UI</div>
-              <div class="settings-item-sub">Нижняя навигация, профиль, поиск, reply и более аккуратный интерфейс.</div>
-            </div>
-            <div class="settings-item">
-              <div class="settings-item-title">Сохранение</div>
-              <div class="settings-item-sub">Профиль, выбранный чат и вход сохраняются локально.</div>
-            </div>
-            <div class="settings-item">
-              <div class="settings-item-title">Следующий шаг</div>
-              <div class="settings-item-sub">Потом можно добавить PWA, иконку и упаковку в Android app.</div>
-            </div>
-          </div>
-        </div>
+   <section class="mobile-screen" id="settingsScreen">
+  <div class="profile-card">
+    <div class="settings-list">
+      <div class="settings-item">
+        <div class="settings-item-title">Marsho Stable UI</div>
+        <div class="settings-item-sub">Нижняя навигация, профиль, поиск, reply и более аккуратный интерфейс.</div>
+      </div>
+      <div class="settings-item">
+        <div class="settings-item-title">Сохранение</div>
+        <div class="settings-item-sub">Профиль, выбранный чат и вход сохраняются локально.</div>
+      </div>
+      <div class="settings-item">
+        <div class="settings-item-title">Следующий шаг</div>
+        <div class="settings-item-sub">Потом можно добавить PWA, иконку и упаковку в Android app.</div>
+      </div>
     </div>
-    </section>
   </div>
-  
-<nav id="bottomNav" class="bottom-nav clean-bottom-nav hidden">
+</section>
 
   <button id="navSettings" class="clean-nav-btn" type="button" onclick="switchBottomTab('settings')">
     <span class="nav-icon">
@@ -1608,7 +1604,6 @@
     <span>Звонки</span>
   </button>
 
-  <!-- ПРОФИЛЬ -->
   <button id="navProfile" class="clean-nav-btn" type="button" onclick="switchBottomTab('profile')">
     <span class="nav-icon">
       <svg viewBox="0 0 24 24">
@@ -1619,7 +1614,6 @@
     <span>Профиль</span>
   </button>
 
-  <!-- ЧАТЫ теперь ПОСЛЕДНИЕ -->
   <button id="navChats" class="clean-nav-btn active" type="button" onclick="switchBottomTab('chats')">
     <span class="nav-icon">
       <svg viewBox="0 0 24 24">
@@ -1634,9 +1628,6 @@
 </nav>
   
 <button class="fab ripple" id="newChatFab" type="button" onclick="ripple(event); openNewChatPrompt()">+</button>
-  
-  </div>
-  </div>
 
   <div class="viewer" id="viewer" onclick="closeImageViewer()">
     <img id="viewerImg" alt="preview" />
