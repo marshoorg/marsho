@@ -930,13 +930,19 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+    
 .tg-composer {
-  padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
-  background: rgba(17,27,33,0.88);
+  position: fixed;
+  bottom: 70px;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+
+  padding: 10px 12px;
+  background: rgba(17,27,33,0.95);
   backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   border-top: 1px solid rgba(255,255,255,0.06);
-}
+  }
 
 .tg-composer-row {
   display: flex;
@@ -1486,6 +1492,7 @@
     </section>
   </div>
   
+   <nav id="bottomNav" class="bottom-nav clean-bottom-nav">
   <button id="navSettings" class="clean-nav-btn" type="button" onclick="switchBottomTab('settings')">
 <span class="nav-icon">
   <svg viewBox="0 0 24 24">
@@ -1502,7 +1509,6 @@
 </span>
     <span>Настройки</span>
   </button>
-</nav>
   
   <button id="navCalls" class="clean-nav-btn" type="button" onclick="switchBottomTab('calls')">
 <span class="nav-icon">
@@ -1523,7 +1529,6 @@
     <span>Профиль</span>
   </button>
 
-  <nav id="bottomNav" class="bottom-nav clean-bottom-nav">
   <button id="navChats" class="clean-nav-btn active" type="button" onclick="switchBottomTab('chats')">
 <span class="nav-icon">
 <svg viewBox="0 0 24 24">
@@ -1534,7 +1539,8 @@
     <span>Чаты</span>
     <span id="navChatsBadge" class="clean-nav-badge hidden">0</span>
   </button>
-
+</nav>
+  
 <button class="fab ripple" id="newChatFab" type="button" onclick="ripple(event); openNewChatPrompt()">+</button>
   
   </div>
