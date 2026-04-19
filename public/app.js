@@ -317,27 +317,33 @@ function logoutUser() {
 
 function registerUser() {
   const phone = String(phoneInput.value || "").trim();
-  const username = String(usernameInput.value || "").trim();
 
   if (!phone) {
     alert("Введите номер телефона");
     return;
   }
 
-  if (!username) {
-    alert("Введите username");
+  if (!ws) {
+    alert("Подключение ещё не готово");
+    connectWs();
     return;
   }
 
-  if (!ws || ws.readyState !== 1) {
-    alert("Соединение с сервером не готово. Обновите страницу.");
+  if (ws.readyState === 0) {
+    alert("Сервер ещё подключается, подождите 2–3 секунды");
+    return;
+  }
+
+  if (ws.readyState !== 1) {
+    alert("Соединение потеряно, пробуем переподключиться");
+    connectWs();
     return;
   }
 
   ws.send(JSON.stringify({
     type: "register",
-    phone,
-    username
+    phone: phone,
+    username: "user_" + phone
   }));
 }
 
