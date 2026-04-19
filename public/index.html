@@ -1302,22 +1302,15 @@
             </div>
           </div>
 
-          <div class="card" id="auth">
-            <div class="card-title">Вход / регистрация</div>
-            <input id="phone" type="text" placeholder="Номер телефона" />
-            <input id="username" type="text" placeholder="Username" />
-            <div class="row">
-              <button
-                type="button"
-                class="btn btn-primary"
-                onclick="registerUser()"
-                style="position: relative; z-index: 99999; pointer-events: auto;"
-              >
-                Войти
-              </button>
-              <button type="button" class="btn btn-ghost" onclick="logoutUser()">Выйти</button>
-            </div>
-          </div>
+      <div class="auth-box" id="auth">
+  <div class="auth-title">Вход</div>
+
+  <input id="phone" type="text" placeholder="Введите номер" />
+
+  <button class="auth-btn" onclick="registerUser()">
+    Продолжить
+  </button>
+</div>
 
           <input id="searchInput" type="text" placeholder="Поиск по пользователям..." />
         </div>
