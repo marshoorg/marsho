@@ -22,7 +22,6 @@ const PROFILE_KEY = "marsho_profile_stable_v1";
 const appShell = document.getElementById("appShell");
 const authDiv = document.getElementById("auth");
 const phoneInput = document.getElementById("phone");
-const usernameInput = document.getElementById("username");
 const searchInput = document.getElementById("searchInput");
 const messageSearchInput = document.getElementById("messageSearchInput");
 const msgInput = document.getElementById("msg");
@@ -98,17 +97,15 @@ function connectWs() {
     statusDiv.textContent = "Подключено";
 
     const saved = loadSavedAuth();
-    if (saved && saved.phone && saved.username) {
-      phoneInput.value = saved.phone;
-      usernameInput.value = saved.username;
+ if (saved && saved.phone) {
+  phoneInput.value = saved.phone;
 
-      ws.send(JSON.stringify({
-        type: "register",
-        phone: saved.phone,
-        username: saved.username
-      }));
-    }
-  };
+  ws.send(JSON.stringify({
+    type: "register",
+    phone: saved.phone,
+    username: saved.username || ("user_" + saved.phone)
+  }));
+}
 
   ws.onerror = function (e) {
     console.log("WS: ОШИБКА", e);
@@ -131,8 +128,6 @@ function connectWs() {
       authDiv.classList.add("hidden");
        const bottomNav = document.getElementById("bottomNav");
 if (bottomNav) bottomNav.classList.remove("hidden");
-       
-       document.getElementById("bottomNav").classList.remove("hidden");
        
       statusDiv.textContent = "Вы вошли как " + me.username;
 
@@ -296,7 +291,6 @@ function logoutUser() {
   const bottomNav = document.getElementById("bottomNav");
 if (bottomNav) bottomNav.classList.add("hidden");
   phoneInput.value = "";
-  usernameInput.value = "";
   searchInput.value = "";
   messageSearchInput.value = "";
   msgInput.value = "";
