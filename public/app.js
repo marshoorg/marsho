@@ -96,14 +96,14 @@ function connectWs() {
     console.log("WS: ОТКРЫТ");
     statusDiv.textContent = "Подключено";
 
-    const saved = loadSavedAuth();
- if (saved && saved.phone) {
+  const saved = loadSavedAuth();
+if (saved && saved.phone) {
   phoneInput.value = saved.phone;
 
   ws.send(JSON.stringify({
     type: "register",
     phone: saved.phone,
-    username: saved.username || ("user_" + saved.phone)
+ username: "user_" + saved.phone
   }));
 }
 
