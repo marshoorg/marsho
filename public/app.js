@@ -129,6 +129,9 @@ function connectWs() {
       me = data.user;
       saveAuth(me.phone, me.username);
       authDiv.classList.add("hidden");
+       
+       document.getElementById("bottomNav").classList.remove("hidden");
+       
       statusDiv.textContent = "Вы вошли как " + me.username;
 
       const savedChat = localStorage.getItem(OPEN_CHAT_KEY);
