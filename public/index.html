@@ -979,34 +979,40 @@
 }
 
 .tg-send-btn {
-  background: linear-gradient(180deg, #41d7bf, #20bfa6);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #2ed3b7, #20bfa6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(46,211,183,0.3);
+  transition: 0.2s;
+}
+
+.tg-send-btn:active {
+  transform: scale(0.9);
 }
 
 .tg-input-wrap {
   flex: 1;
-  min-width: 0;
   height: 52px;
   border-radius: 26px;
-  background: rgba(9,17,22,0.86);
-  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(9,17,22,0.9);
+  border: 1px solid rgba(255,255,255,0.05);
   display: flex;
   align-items: center;
-  padding: 0 8px 0 16px;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+  padding: 0 12px;
 }
 
 .tg-message-input {
   flex: 1;
-  min-width: 0;
   height: 100%;
   background: transparent;
   border: none;
   outline: none;
-  margin: 0;
-  padding: 0;
   font-size: 16px;
-  color: #ecf2f8;
-  box-shadow: none !important;
+  color: white;
 }
 
 .tg-message-input::placeholder {
@@ -1014,16 +1020,14 @@
 }
 
 .tg-inner-voice-btn {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  border: none;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: transparent;
-  color: #90a2b2;
+  background: rgba(255,255,255,0.08);
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #9fb3c8;
 }
 
 .tg-inner-voice-btn svg {
